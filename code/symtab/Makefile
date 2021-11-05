@@ -14,10 +14,16 @@ OUTFILE =	symtab
 
 DPFILE  =	Makefile.dependencies
 
+PATH := ../flex/bin/:$(PATH)
+
 all : $(OUTFILE)
 
 $(OUTFILE) : $(OBJECTS)
 	$(CC) -o $(OUTFILE) $(OBJECTS) $(LDFLAGS)
+
+.flex :
+	$(MAKE) -C ../flex
+	touch .flex
 
 scanner.cc : scanner.l
 	flex scanner.l

@@ -14,12 +14,18 @@ OUTFILE =	scanner
 
 DPFILE  =	Makefile.dependencies
 
+PATH := ../flex/bin/:$(PATH)
+
 all : $(OUTFILE)
 
 $(OUTFILE) : $(OBJECTS)
 	$(CC) -o $(OUTFILE) $(OBJECTS) $(LDFLAGS)
 
-scanner.cc : scanner.l
+.flex :
+	$(MAKE) -C ../flex
+	touch .flex
+
+scanner.cc : scanner.l .flex
 	flex scanner.l
 
 scanner.o : scanner.cc

@@ -15,7 +15,17 @@ OUTFILE =	compiler
 
 DPFILE  =	Makefile.dependencies
 
+PATH := ../flex/bin/:../bison/bin:$(PATH)
+
 all : $(OUTFILE) diesel_rts.o
+
+.flex :
+	$(MAKE) -C ../flex
+	touch $@
+
+.bison :
+	$(MAKE) -C ../bison
+	touch $@
 
 $(OUTFILE) : $(OBJECTS)
 	$(CC) -o $(OUTFILE) $(OBJECTS) $(LDFLAGS)
@@ -23,10 +33,10 @@ $(OUTFILE) : $(OBJECTS)
 foo : foo.cc
 	$(CC) $(CFLAGS) -o foo
 
-parser.cc parser.hh : parser.y Makefile
+parser.cc parser.hh : parser.y Makefile .bison
 	bison --defines --output-file=parser.cc parser.y
 
-scanner.cc : scanner.l
+scanner.cc : scanner.l .flex
 	flex scanner.l
 
 scanner.o : scanner.cc
