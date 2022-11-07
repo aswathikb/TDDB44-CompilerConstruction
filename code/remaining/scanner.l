@@ -34,9 +34,20 @@ extern YYLTYPE yylloc; // Used for position information, see below.
 /* If you want to include any flex declarations, this is where to do it. */
 
 %x c_comment
+%x comment
 DIGIT [0-9]
 /* {DIGIT}+"."{DIGIT}*
  ID [a-z][a-z0-9]* */
+INTEGER {DIGIT}+
+DECIMAL {DIGIT}+"."{DIGIT}*|"."{DIGIT}+
+EXPONENT [eE][+-]?{INTEGER}
+FLOAT {DECIMAL}{EXPONENT}?|{INTEGER}{EXPONENT}
+NUMERICALCONSTANT {INTEGER}|{FLOAT}
+STRING '([^'\n]|'')*'
+ID [A-Za-z_][A-Za-z_0-9]*
+SPACE [ \t]
+COMMENT '{'[^'}']*'}'
+
 
 /* Position information is entered into the yylloc variable, so we will be
    able to generate good error messages later in later phases. */
@@ -204,7 +215,10 @@ return                   {
                             
                          }
 program                  {
-                            
+                           yylloc.first_line = yylineno;
+                           yylloc.first_column = column;
+                           column += yyleng;
+                           return T_PROGRAM;
                          }
 function                 {
                             
@@ -213,6 +227,51 @@ procedure                {
                             
                          }
 
+                     
+{FLOAT}                  {
+                           yylloc.first_line = yylineno;
+                           yylloc.first_column = column;
+                           column += yyleng;
+                           yylval.rval = stod(yytext);
+                           return T_REALNUM;
+                         }
+{SPACE}                  {
+                           column++;
+}
+\n                       {
+                           column = 0;
+                         }
+{INTEGER}                {
+                           yylloc.first_line = yylineno;
+                           yylloc.first_column = column;
+                           column += yyleng;
+                           yylval.ival = atoi(yytext);
+                           return T_INTNUM;
+                         }
+"{"                      {
+                            column += yyleng;
+                            BEGIN(comment);
+                         }
+<comment>
+{
+    "}"                  {
+                            column += 1;
+                            BEGIN(INITIAL);
+                         }
+    [^\n]                column++; /* Skip stuff in comments */
+    \n                   column = 0;
+    <<EOF>>              {
+                            yyerror("Unterminated comment");
+                            yyterminate();
+                         }
+}             
+{ID}                {
+                           yylloc.first_line = yylineno;
+                           yylloc.first_column = column;
+                           yylval.pool_pos = column;
+                           column += yyleng;
+                           return T_IDENT;
+                         }
 
 \/\/.*$                  column = 0; /* Skip single-line comment */
 "/\*"                    {
