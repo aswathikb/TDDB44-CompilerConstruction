@@ -394,7 +394,6 @@ procedure                {
                             yyterminate();
                          }
 }
-
  
 
 <<EOF>>                  yyterminate();
