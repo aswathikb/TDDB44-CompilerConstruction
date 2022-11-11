@@ -37,7 +37,7 @@ symbol_table::symbol_table()
      // Always points to the last position in the string pool
     pool_pos = 0;
     // Set base size of string pool. Can be extended later on,
-    // if there are many symbols to scan.
+    // if there are many symbols to scan.sym_table
     pool_length = BASE_POOL_SIZE;
 
     // create a string with length of pool_length
@@ -535,6 +535,11 @@ sym_index symbol_table::current_environment()
 void symbol_table::open_scope()
 {
     /* Your code here */
+    if(current_level>=MAX_BLOCK){
+        fatal("MAX_BLOCK reached");
+    }
+    block_table[current_level] = sym_pos;
+    current_level++;
 }
 
 
@@ -542,7 +547,23 @@ void symbol_table::open_scope()
 sym_index symbol_table::close_scope()
 {
     /* Your code here */
-    return NULL_SYM;
+    if(current_level==0){
+        fatal("MIN_BLOCK reached");
+    }
+
+    for(sym_index i = sym_pos; i>block_table[current_level-1]; i--){
+        sym_index hash_value = hash_table[hash(sym_tab->get_symbol_id(i))];
+        if(hash_value==i){
+            sym_index tmp_hash_link = sym_table[i]->hash_link;
+            hash_table[hash(sym_tab->get_symbol_id(i))] = tmp_hash_link;
+        }
+    }
+    current_level--;
+    if(current_level==0){
+        return 0;
+    }
+
+    return block_table[current_level-1];
 }
 
 
@@ -554,6 +575,14 @@ sym_index symbol_table::close_scope()
 sym_index symbol_table::lookup_symbol(const pool_index pool_p)
 {
     /* Your code here */
+    sym_index curr_link = hash_table[hash(pool_p)]; 
+    while(curr_link != NULL_SYM){
+        if(sym_table[curr_link]->id==pool_p){
+            return curr_link;
+        }
+        curr_link = sym_table[curr_link]->hash_link;
+    }
+
     return NULL_SYM;
 }
 
@@ -644,7 +673,52 @@ sym_index symbol_table::install_symbol(const pool_index pool_p,
                                        const sym_type tag)
 {
     /* Your code here */
-    return 0; // Return index to the symbol we just created.
+    sym_index lookup_result = lookup_symbol(pool_p);
+    if(lookup_result!=NULL_SYM && sym_table[lookup_result]->level==current_level){
+        return lookup_result;
+    }
+    if(sym_pos>=MAX_SYM-1){
+        fatal("MAX_SYM reached!");
+    }
+    sym_pos++;
+
+    symbol* new_symbol;
+    switch(tag){
+        case SYM_ARRAY:
+            new_symbol = new array_symbol(pool_p);
+            break;
+        case SYM_FUNC:
+            new_symbol = new function_symbol(pool_p);
+            break;
+        case SYM_PROC:
+            new_symbol = new procedure_symbol(pool_p);
+            break;
+        case SYM_VAR:
+            new_symbol = new variable_symbol(pool_p);
+            break;
+        case SYM_PARAM:
+            new_symbol = new parameter_symbol(pool_p);
+            break;
+        case SYM_CONST:
+            new_symbol = new constant_symbol(pool_p);
+            break;
+        case SYM_NAMETYPE:
+            new_symbol = new nametype_symbol(pool_p);
+            break;
+        case SYM_UNDEF:
+        default:
+            fatal("incorrect tag!");    
+    }
+
+    new_symbol->level = current_level;
+    new_symbol->hash_link = lookup_result;
+    new_symbol->back_link = hash(pool_p);
+
+    sym_table[sym_pos] = new_symbol;
+    hash_table[hash(pool_p)] = sym_pos; 
+
+
+    return sym_pos; // Return index to the symbol we just created.
 }
 
 /* Enter a constant into the symbol table. The value is an integer. The type
@@ -888,8 +962,13 @@ sym_index symbol_table::enter_function(position_information *pos,
 sym_index symbol_table::enter_procedure(position_information *pos,
                                         const pool_index pool_p)
 {
-    /* Your code here */
-    return NULL_SYM;
+    sym_index sym_p = install_symbol(pool_p, SYM_PROC);
+    procedure_symbol* proc = sym_table[sym_pos]->get_procedure_symbol();
+    if(proc->tag != SYM_UNDEF){
+        type_error(pos) << "Redeclaring" << proc << endl;
+    }
+    open_scope();
+    return sym_p;
 }
 
 
@@ -920,7 +999,8 @@ sym_index symbol_table::enter_parameter(position_information *pos,
     // call enter_parameter. So the current_environment() is the new function
     // or procedure, not the one from which it's being called. If this part
     // is confusing, don't be afraid to ask someone. :)
-    symbol *tmp = sym_table[current_environment()];
+    auto x = current_environment();
+    symbol *tmp = sym_table[x];
 
     parameter_symbol *tmp_param;
 
