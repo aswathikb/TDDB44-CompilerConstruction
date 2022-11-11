@@ -538,8 +538,8 @@ void symbol_table::open_scope()
     if(current_level>=MAX_BLOCK){
         fatal("MAX_BLOCK reached");
     }
-    block_table[current_level] = sym_pos;
     current_level++;
+    block_table[current_level] = sym_pos;
 }
 
 
@@ -551,7 +551,7 @@ sym_index symbol_table::close_scope()
         fatal("MIN_BLOCK reached");
     }
 
-    for(sym_index i = sym_pos; i>block_table[current_level-1]; i--){
+    for(sym_index i = sym_pos; i>block_table[current_level]; i--){
         sym_index hash_value = hash_table[hash(sym_tab->get_symbol_id(i))];
         if(hash_value==i){
             sym_index tmp_hash_link = sym_table[i]->hash_link;
@@ -559,11 +559,8 @@ sym_index symbol_table::close_scope()
         }
     }
     current_level--;
-    if(current_level==0){
-        return 0;
-    }
 
-    return block_table[current_level-1];
+    return block_table[current_level];
 }
 
 
@@ -574,10 +571,10 @@ sym_index symbol_table::close_scope()
    follows hash links outwards. */
 sym_index symbol_table::lookup_symbol(const pool_index pool_p)
 {
-    /* Your code here */
-    sym_index curr_link = hash_table[hash(pool_p)]; 
+    sym_index curr_link = hash_table[hash(pool_p)];
     while(curr_link != NULL_SYM){
-        if(sym_table[curr_link]->id==pool_p){
+        // cout << "vgl: " << pool_lookup(sym_table[curr_link]->id) << " with " << pool_lookup(pool_p);
+        if(strcmp(pool_lookup(sym_table[curr_link]->id), pool_lookup(pool_p))==0){
             return curr_link;
         }
         curr_link = sym_table[curr_link]->hash_link;
@@ -672,8 +669,13 @@ void symbol_table::set_symbol_type(const sym_index sym_p,
 sym_index symbol_table::install_symbol(const pool_index pool_p,
                                        const sym_type tag)
 {
+    /*auto aaa = pool_lookup(pool_p);
+    cout << "\n" << aaa << ":\n";
+    cout << "current hash: " << hash(pool_p) << "\n";
+    print(3);*/
     /* Your code here */
     sym_index lookup_result = lookup_symbol(pool_p);
+    //cout << "found " << lookup_result << "\n";
     if(lookup_result!=NULL_SYM && sym_table[lookup_result]->level==current_level){
         return lookup_result;
     }
@@ -716,7 +718,6 @@ sym_index symbol_table::install_symbol(const pool_index pool_p,
 
     sym_table[sym_pos] = new_symbol;
     hash_table[hash(pool_p)] = sym_pos; 
-
 
     return sym_pos; // Return index to the symbol we just created.
 }
@@ -967,7 +968,19 @@ sym_index symbol_table::enter_procedure(position_information *pos,
     if(proc->tag != SYM_UNDEF){
         type_error(pos) << "Redeclaring" << proc << endl;
     }
-    open_scope();
+
+    // Set up the function-specific fields.
+    proc->tag = SYM_PROC;
+    proc->type = void_type;
+
+    // Parameters are added later on.
+    proc->last_parameter = NULL;
+
+    // This will grow as local variables and temporaries are added.
+    proc->ar_size = 0;
+    proc->label_nr = get_next_label();
+
+    sym_table[sym_p] = proc;
     return sym_p;
 }
 
@@ -999,8 +1012,7 @@ sym_index symbol_table::enter_parameter(position_information *pos,
     // call enter_parameter. So the current_environment() is the new function
     // or procedure, not the one from which it's being called. If this part
     // is confusing, don't be afraid to ask someone. :)
-    auto x = current_environment();
-    symbol *tmp = sym_table[x];
+    symbol *tmp = sym_table[current_environment()]; 
 
     parameter_symbol *tmp_param;
 
