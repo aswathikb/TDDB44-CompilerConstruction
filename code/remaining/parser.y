@@ -198,11 +198,25 @@ const_decls     : const_decl
 
 const_decl      : T_IDENT T_EQ integer T_SEMICOLON
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    sym_tab->enter_constant(pos,
+                                            $1,
+                                            integer_type,
+                                            $3->value);
                 }
                 | T_IDENT T_EQ real T_SEMICOLON
                 {
-                    /* Your code here */
+                    /* code completed*/
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    sym_tab->enter_constant(pos,
+                                            $1,
+                                            real_type,
+                                            $3->value);
                 }
                 | T_IDENT T_EQ T_STRINGCONST T_SEMICOLON
                 {
@@ -234,10 +248,13 @@ var_decls       : var_decl
 
 var_decl        : T_IDENT T_COLON type_id T_SEMICOLON
                 {
-                    /* Your code here */
+                    /* code completed */
                     position_information *pos =
                         new position_information(@1.first_line,
                                                  @1.first_column);
+                    sym_tab->enter_variable(pos,
+                                         $1,
+                                         $3->sym_p);    
                     
                 }
                 | T_IDENT T_COLON T_ARRAY T_LEFTBRACKET integer T_RIGHTBRACKET T_OF type_id T_SEMICOLON
@@ -471,6 +488,7 @@ func_head       : T_FUNCTION T_IDENT
 opt_param_list  : T_LEFTPAR param_list T_RIGHTPAR
                 {
                     /* Your code here */
+
                 }
                 | T_LEFTPAR error T_RIGHTPAR
                 {
@@ -479,6 +497,7 @@ opt_param_list  : T_LEFTPAR param_list T_RIGHTPAR
                 | /* empty */
                 {
                     /* Your code here */
+                    $$ = NULL;
                 }
                 ;
 
