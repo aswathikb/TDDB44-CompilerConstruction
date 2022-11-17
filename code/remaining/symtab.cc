@@ -557,6 +557,7 @@ sym_index symbol_table::close_scope()
             sym_index tmp_hash_link = sym_table[i]->hash_link;
             hash_table[hash(sym_tab->get_symbol_id(i))] = tmp_hash_link;
         }
+        sym_table[i]->hash_link = NULL_SYM;
     }
     current_level--;
 
