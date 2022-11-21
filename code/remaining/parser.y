@@ -230,7 +230,23 @@ const_decl      : T_IDENT T_EQ integer T_SEMICOLON
                     // constant foo = 5;
                     // constant bar = foo;
                     // ...now, why would anyone want to do that?
-                    /* Your code here */
+                    /* completed code */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    
+                    constant_symbol* const_sym = sym_tab->get_symbol($3->sym_p)->get_constant_symbol();
+                    if (const_sym->type == integer_type)
+                        sym_tab->enter_constant(pos,
+                                            $1,
+                                            integer_type,
+                                            const_sym->const_value.ival);
+                    else
+                        sym_tab->enter_constant(pos,
+                                            $1,
+                                            real_type,
+                                            const_sym->const_value.rval);
+
                 }
                 
                 ;
@@ -533,25 +549,45 @@ param           : T_IDENT T_COLON type_id
 
 comp_stmt       : T_BEGIN stmt_list T_END
                 {
-                    /* Your code here */
+                    /* code completed */
+                    $$ = $2;
                 }
                 ;
 
 
 stmt_list       : stmt
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = ast_stmt_list(pos,
+                                       $1);
                 }
                 | stmt_list T_SEMICOLON stmt
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = ast_stmt_list(pos,
+                                       $3,
+                                       $1);
                 }
                 ;
 
 
 stmt            : T_IF expr T_THEN stmt_list elsif_list else_part T_END
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = ast_if(pos,
+                                $2,
+                                $4,
+                                $5,
+                                $6);
                 }
                 | T_WHILE expr T_DO stmt_list T_END
                 {
@@ -611,29 +647,45 @@ rvariable       : rvar_id
 
 elsif_list      : elsif_list elsif
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+
+                    $$ = ast_elsif_list(pos,
+                                        $2,
+                                        $1);
                 }
                 | /* empty */
                 {
-                    /* Your code here */
+                    /* code complete */
+                    $$ = NULL;
                 }
                 ;
 
 
 elsif           : T_ELSIF expr T_THEN stmt_list
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = ast_elsif(pos,
+                                   $2,
+                                   $4);
                 }
                 ;
 
 
 else_part       : T_ELSE stmt_list
                 {
-                    /* Your code here */
+                    /* code completed */
+                    $$ = $2;
                 }
                 | /* empty */
                 {
-                    /* Your code here */
+                    /* code complete */
+                    $$ = NULL;
                 }
                 ;
 
@@ -644,7 +696,8 @@ opt_expr_list   : expr_list
                 }
                 | /* empty */
                 {
-                    /* Your code here */
+                    /* code complete */
+                    $$ = NULL;
                 }
                 ;
 
@@ -712,27 +765,58 @@ simple_expr     : term
 
 term            : factor
                 {
-                    /* Your code here */
+                    /* code completed */
+                    $$ = $1;
                 }
                 | term T_AND factor
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = ast_and(pos,
+                                 $1,
+                                 $3);
                 }
                 | term T_MUL factor
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = ast_mult(pos,
+                                 $1,
+                                 $3);
                 }
                 | term T_RDIV factor
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = ast_divide(pos,
+                                    $1,
+                                    $3);
                 }
                 | term T_IDIV factor
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = ast_idiv(pos,
+                                  $1,
+                                  $3);
                 }
                 | term T_MOD factor
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = ast_mod(pos,
+                                 $1,
+                                 $3);
                 }
                 ;
 
@@ -755,11 +839,17 @@ factor          : rvariable
                 }
                 | T_NOT factor
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = ast_not(pos,
+                                 $2);
                 }
                 | T_LEFTPAR expr T_RIGHTPAR
                 {
-                    /* Your code here */
+                    /* code completed */
+                    $$ = $2;
                 }
                 
                 ;
