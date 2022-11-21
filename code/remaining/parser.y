@@ -179,7 +179,13 @@ prog_decl       : prog_head T_SEMICOLON const_part variable_part
 
 prog_head       : T_PROGRAM T_IDENT
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    sym_index sym_p = sym_tab->enter_procedure(pos, $2);
+                    $$ = new ast_procedurehead(pos,
+                                               sym_p);
                     sym_tab->open_scope();
                 }
                 ;
@@ -454,7 +460,10 @@ proc_decl       : proc_head opt_param_list T_SEMICOLON const_part variable_part
 
 func_decl       : func_head opt_param_list T_COLON type_id T_SEMICOLON const_part variable_part
                 {
-                    /* Your code here */
+                    /* code completed ~might be wrong~ */
+                    sym_tab->get_symbol($1->sym_p)->type = $4->;
+                    $$ = $1;
+
                 }
                 ;
 
@@ -503,9 +512,8 @@ func_head       : T_FUNCTION T_IDENT
 
 opt_param_list  : T_LEFTPAR param_list T_RIGHTPAR
                 {
-                    /* Your code here */
-
-
+                    /* code completed */
+                    $$ = $2;
                 }
                 | T_LEFTPAR error T_RIGHTPAR
                 {
@@ -562,8 +570,11 @@ stmt_list       : stmt
                     position_information *pos =
                         new position_information(@1.first_line,
                                                  @1.first_column);
-                    $$ = ast_stmt_list(pos,
-                                       $1);
+                    if($1!=NULL)
+                       $$ = new ast_stmt_list(pos, 
+                                              $1);
+                    else
+                        $$ = NULL;
                 }
                 | stmt_list T_SEMICOLON stmt
                 {
@@ -571,9 +582,19 @@ stmt_list       : stmt
                     position_information *pos =
                         new position_information(@1.first_line,
                                                  @1.first_column);
-                    $$ = ast_stmt_list(pos,
-                                       $3,
-                                       $1);
+                    if($1!=NULL && $3!=NULL)
+                        $$ = new ast_stmt_list(pos,
+                                               $3,
+                                               $1);
+                    else if($3 != NULL)
+                        $$ = new ast_stmt_list(pos,
+                                               $3);
+                    /*  why is this not possible?
+                    else if($1 != NULL)
+                        $$ = new ast_stmt_list(pos,
+                                               $1);*/
+                    else
+                        $$ = $1;
                 }
                 ;
 
@@ -584,7 +605,7 @@ stmt            : T_IF expr T_THEN stmt_list elsif_list else_part T_END
                     position_information *pos =
                         new position_information(@1.first_line,
                                                  @1.first_column);
-                    $$ = ast_if(pos,
+                    $$ = new ast_if(pos,
                                 $2,
                                 $4,
                                 $5,
@@ -596,7 +617,7 @@ stmt            : T_IF expr T_THEN stmt_list elsif_list else_part T_END
                     position_information *pos =
                         new position_information(@1.first_line,
                                                  @1.first_column);
-                    $$ = ast_while(pos,
+                    $$ = new ast_while(pos,
                                    $2,
                                    $4);
 
@@ -607,7 +628,7 @@ stmt            : T_IF expr T_THEN stmt_list elsif_list else_part T_END
                     position_information *pos =
                         new position_information(@1.first_line,
                                                  @1.first_column);
-                    $$ = ast_procedurecall(pos,
+                    $$ = new ast_procedurecall(pos,
                                            $1,
                                            $3);
                 }
@@ -617,7 +638,7 @@ stmt            : T_IF expr T_THEN stmt_list elsif_list else_part T_END
                     position_information *pos =
                         new position_information(@1.first_line,
                                                  @1.first_column);
-                    $$ = ast_assign(pos,
+                    $$ = new ast_assign(pos,
                                     $1,
                                     $3);
                 }
@@ -627,8 +648,8 @@ stmt            : T_IF expr T_THEN stmt_list elsif_list else_part T_END
                     position_information *pos =
                         new position_information(@1.first_line,
                                                  @1.first_column);
-                    $$ = ast_return(pos,
-                                    $1);
+                    $$ = new ast_return(pos,
+                                    $2);
                 }
                 | T_RETURN
                 {
@@ -636,7 +657,7 @@ stmt            : T_IF expr T_THEN stmt_list elsif_list else_part T_END
                     position_information *pos =
                         new position_information(@1.first_line,
                                                  @1.first_column);
-                    $$ = ast_return(pos);
+                    $$ = new ast_return(pos);
                 }
                 
                 | /* empty */
@@ -686,7 +707,7 @@ elsif_list      : elsif_list elsif
                         new position_information(@1.first_line,
                                                  @1.first_column);
 
-                    $$ = ast_elsif_list(pos,
+                    $$ = new ast_elsif_list(pos,
                                         $2,
                                         $1);
                 }
@@ -704,7 +725,7 @@ elsif           : T_ELSIF expr T_THEN stmt_list
                     position_information *pos =
                         new position_information(@1.first_line,
                                                  @1.first_column);
-                    $$ = ast_elsif(pos,
+                    $$ = new ast_elsif(pos,
                                    $2,
                                    $4);
                 }
@@ -726,7 +747,8 @@ else_part       : T_ELSE stmt_list
 
 opt_expr_list   : expr_list
                 {
-                    /* Your code here */
+                    /* code completed */
+                    $$ = $1;
                 }
                 | /* empty */
                 {
@@ -739,7 +761,7 @@ opt_expr_list   : expr_list
 expr_list       : expr
                 {
                     /* code completed */
-                    $$ = $1;
+                    $$ = new ast_expr_list($1->pos, $1);
 
                 }
                 | expr_list T_COMMA expr
@@ -810,7 +832,9 @@ simple_expr     : term
                 }
                 | T_ADD term
                 {
-                    /* Your code here */
+                    /* code completed */
+                    $$ = $2;
+                }
                 | T_SUB term
                 {
                     /* code completed */
@@ -826,7 +850,7 @@ simple_expr     : term
                     position_information *pos =
                         new position_information(@1.first_line,
                                                  @1.first_column);
-                    $$ = new ast_uminus(pos,
+                    $$ = new ast_or(pos,
                                         $1,
                                         $3);
                 }
@@ -864,7 +888,7 @@ term            : factor
                     position_information *pos =
                         new position_information(@1.first_line,
                                                  @1.first_column);
-                    $$ = ast_and(pos,
+                    $$ = new ast_and(pos,
                                  $1,
                                  $3);
                 }
@@ -874,7 +898,7 @@ term            : factor
                     position_information *pos =
                         new position_information(@1.first_line,
                                                  @1.first_column);
-                    $$ = ast_mult(pos,
+                    $$ = new ast_mult(pos,
                                   $1,
                                   $3);
                 }
@@ -884,7 +908,7 @@ term            : factor
                     position_information *pos =
                         new position_information(@1.first_line,
                                                  @1.first_column);
-                    $$ = ast_divide(pos,
+                    $$ = new ast_divide(pos,
                                     $1,
                                     $3);
                 }
@@ -894,7 +918,7 @@ term            : factor
                     position_information *pos =
                         new position_information(@1.first_line,
                                                  @1.first_column);
-                    $$ = ast_idiv(pos,
+                    $$ = new ast_idiv(pos,
                                   $1,
                                   $3);
                 }
@@ -904,7 +928,7 @@ term            : factor
                     position_information *pos =
                         new position_information(@1.first_line,
                                                  @1.first_column);
-                    $$ = ast_mod(pos,
+                    $$ = new ast_mod(pos,
                                  $1,
                                  $3);
                 }
@@ -933,7 +957,7 @@ factor          : rvariable
                     position_information *pos =
                         new position_information(@1.first_line,
                                                  @1.first_column);
-                    $$ = ast_not(pos,
+                    $$ = new ast_not(pos,
                                  $2);
                 }
                 | T_LEFTPAR expr T_RIGHTPAR
@@ -947,7 +971,13 @@ factor          : rvariable
 
 func_call       : func_id T_LEFTPAR opt_expr_list T_RIGHTPAR
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = new ast_functioncall(pos,
+                                          $1,
+                                          $3);
                 }
                 
                 ;
