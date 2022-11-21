@@ -461,8 +461,8 @@ proc_decl       : proc_head opt_param_list T_SEMICOLON const_part variable_part
 func_decl       : func_head opt_param_list T_COLON type_id T_SEMICOLON const_part variable_part
                 {
                     /* code completed ~might be wrong~ */
-                    sym_tab->get_symbol($1->sym_p)->type = $4->;
-                    $$ = $1;
+                    sym_tab->set_symbol_type($1->sym_p, $4->sym_p);
+                    $$ = $1; 
 
                 }
                 ;
