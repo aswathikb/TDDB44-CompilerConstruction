@@ -505,6 +505,7 @@ opt_param_list  : T_LEFTPAR param_list T_RIGHTPAR
                 {
                     /* Your code here */
 
+
                 }
                 | T_LEFTPAR error T_RIGHTPAR
                 {
@@ -512,7 +513,7 @@ opt_param_list  : T_LEFTPAR param_list T_RIGHTPAR
                 }
                 | /* empty */
                 {
-                    /* Your code here */
+                    /* code completed */
                     $$ = NULL;
                 }
                 ;
@@ -591,28 +592,57 @@ stmt            : T_IF expr T_THEN stmt_list elsif_list else_part T_END
                 }
                 | T_WHILE expr T_DO stmt_list T_END
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = ast_while(pos,
+                                   $2,
+                                   $4);
+
                 }
                 | proc_id T_LEFTPAR opt_expr_list T_RIGHTPAR
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = ast_procedurecall(pos,
+                                           $1,
+                                           $3);
                 }
                 | lvariable T_ASSIGN expr
                 {
-                    /* Your code here */
+                   /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = ast_assign(pos,
+                                    $1,
+                                    $3);
                 }
                 | T_RETURN expr
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = ast_return(pos,
+                                    $1);
                 }
                 | T_RETURN
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = ast_return(pos);
                 }
                 
                 | /* empty */
                 {
-                    /* Your code here */
+                    /* code complete */
+                    $$ = NULL;
                 }
                 ;
 
@@ -635,11 +665,15 @@ lvariable       : lvar_id
 
 rvariable       : rvar_id
                 {
-                    /* Your code here */
+                    /* code completed*/
+                    $$ = $1;
                 }
                 | array_id T_LEFTBRACKET expr T_RIGHTBRACKET
                 {
-                    /* Your code here */
+                    /* code completed*/
+                     $$ = new ast_indexed($1->pos,
+                                         $1,
+                                         $3);
                 }
                 
                 ;
@@ -704,61 +738,117 @@ opt_expr_list   : expr_list
 
 expr_list       : expr
                 {
-                    /* Your code here */
+                    /* code completed */
+                    $$ = $1;
+
                 }
                 | expr_list T_COMMA expr
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = new ast_expr_list(pos,
+                                           $3,
+                                           $1);
                 }
                 ;
 
 
 expr            : simple_expr
                 {
-                    /* Your code here */
+                    /* code completed */
+                    $$ = $1;
                 }
                 | expr T_EQ simple_expr
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = new ast_equal(pos,
+                                           $1,
+                                           $3);
                 }
                 | expr T_NOTEQ simple_expr
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = new ast_notequal(pos,
+                                          $1,
+                                          $3);
                 }
                 | expr T_LESSTHAN simple_expr
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = new ast_lessthan(pos,
+                                          $1,
+                                          $3);
                 }
                 | expr T_GREATERTHAN simple_expr
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = new ast_greaterthan(pos,
+                                          $1,
+                                          $3);
                 }
                 ;
 
 
 simple_expr     : term
                 {
-                    /* Your code here */
+                    /* code completed */
+                    $$ = $1;
                 }
                 | T_ADD term
                 {
                     /* Your code here */
-                }
                 | T_SUB term
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = new ast_uminus(pos,
+                                        $2);
                 }
                 | simple_expr T_OR term
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = new ast_uminus(pos,
+                                        $1,
+                                        $3);
                 }
                 | simple_expr T_ADD term
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = new ast_add(pos,
+                                     $1,
+                                     $3);
                 }
                 | simple_expr T_SUB term
                 {
-                    /* Your code here */
+                    /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    $$ = new ast_sub(pos,
+                                     $1,
+                                     $3);
                 }
                 ;
 
@@ -785,8 +875,8 @@ term            : factor
                         new position_information(@1.first_line,
                                                  @1.first_column);
                     $$ = ast_mult(pos,
-                                 $1,
-                                 $3);
+                                  $1,
+                                  $3);
                 }
                 | term T_RDIV factor
                 {
