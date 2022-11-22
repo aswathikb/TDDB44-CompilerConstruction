@@ -52,6 +52,7 @@ void semantic::check_parameters(ast_id *call_id,
                                 ast_expr_list *param_list)
 {
     /* Your code here */
+    //call_id->sym_p->get_parameter_symbol;
 }
 
 
@@ -179,8 +180,24 @@ sym_index ast_mult::type_check()
    operands are cast to real too as needed. */
 sym_index ast_divide::type_check()
 {
-    /* Your code here */
-    return void_type;
+    /* code completed */
+    sym_index left_expr = left->type_check(); 
+    if(left_expr != real_type){
+        if(left_expr != integer_type){
+            type_error(left->pos) << "Bad return type from function.\n";
+        }else{
+            left = new ast_cast(left->pos, left);
+        }
+    }
+    sym_index right_expr = right->type_check();
+    if(right->type_check() != real_type){
+        if(right_expr != integer_type){
+            type_error(right->pos) << "Bad return type from function.\n";
+        }else{
+            right = new ast_cast(right->pos, right);
+        }
+    }
+    return real_type;
 }
 
 
@@ -211,14 +228,22 @@ sym_index ast_and::type_check()
 
 sym_index ast_idiv::type_check()
 {
-    /* Your code here */
-    return void_type;
+    /* code completed */
+    if(left->type_check() != integer_type)
+        type_error(left->pos) << "Bad return type from function.\n";
+    if(right->type_check() != integer_type)
+        type_error(right->pos) << "Bad return type from function.\n";
+    return integer_type;
 }
 
 sym_index ast_mod::type_check()
 {
-    /* Your code here */
-    return void_type;
+    /* code completed */
+    if(left->type_check() != integer_type)
+        type_error(left->pos) << "Bad return type from function.\n";
+    if(right->type_check() != integer_type)
+        type_error(right->pos) << "Bad return type from function.\n";
+    return integer_type;
 }
 
 
@@ -352,8 +377,11 @@ sym_index ast_uminus::type_check()
 
 sym_index ast_not::type_check()
 {
-    /* Your code here */
-    return void_type;
+    /* code completed */
+    if(expr->type_check() != integer_type)
+        type_error(pos) << "Bad return type from function.\n";
+    
+    return integer_type;
 }
 
 

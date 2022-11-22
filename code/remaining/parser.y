@@ -275,8 +275,8 @@ var_decl        : T_IDENT T_COLON type_id T_SEMICOLON
                         new position_information(@1.first_line,
                                                  @1.first_column);
                     sym_tab->enter_variable(pos,
-                                         $1,
-                                         $3->sym_p);    
+                                            $1,
+                                            $3->sym_p);    
                     
                 }
                 | T_IDENT T_COLON T_ARRAY T_LEFTBRACKET integer T_RIGHTBRACKET T_OF type_id T_SEMICOLON
@@ -789,8 +789,8 @@ expr            : simple_expr
                         new position_information(@1.first_line,
                                                  @1.first_column);
                     $$ = new ast_equal(pos,
-                                           $1,
-                                           $3);
+                                        $1,
+                                        $3);
                 }
                 | expr T_NOTEQ simple_expr
                 {
