@@ -42,8 +42,16 @@ bool semantic::chk_param(ast_id *env,
                         parameter_symbol *formals,
                         ast_expr_list *actuals)
 {
-    /* Your code here */
-    return true;
+    /* code completed - might be wrong */
+    if(formals->last_parameter==NULL || actuals->preceding==NULL){
+        return formals->last_parameter==actuals->preceding;
+    }
+    symbol *res_sym = sym_tab->get_symbol(lookup_symbol(formals->id));
+    if(res_sym->type!=actuals->last_expr.type_check()){
+        return false;
+    }
+    
+    return chk_param(env, formals->last_parameter, actuals->preceding);
 }
 
 
@@ -51,8 +59,17 @@ bool semantic::chk_param(ast_id *env,
 void semantic::check_parameters(ast_id *call_id,
                                 ast_expr_list *param_list)
 {
-    /* Your code here */
-    //call_id->sym_p->get_parameter_symbol;
+    /* code completed */
+    symbol *res_sym = sym_tab->get_symbol(call_id->sym_p);
+    if(res_sym->tag==SYM_PROC){
+        procedure_symbol * proc_sym = res_sym->get_procedure_symbol();
+        if(!chk_param(call_id, proc_sym->last_parameter, param_list))
+            type_error() << "A function must return a value.\n";
+    } else if(res_sym->tag==SYM_FUNC){
+        function_symbol * func_sym = res_sym->get_function_symbol();
+        if(!chk_param(call_id, func_sym->last_parameter, param_list))
+            type_error() << "A function must return a value.\n";
+    }
 }
 
 
@@ -149,9 +166,17 @@ sym_index ast_id::type_check()
 
 sym_index ast_indexed::type_check()
 {
-    /* Your code here */
-    
-    return void_type;
+    /* code completed - question */
+    array_symbol *arr_sym = sym_tab->get_symbol(id->sym_p)->get_array_symbol();
+    if (arr_sym->tag != SYM_ARRAY){
+        error(pos) << "Can't index \n";
+        return void_type;
+    }
+
+    if (index->type_check() != integer_type)
+        type_error(index->pos) << "index must be of type integer!\n";
+
+    return arr_sym->type;
 }
 
 
@@ -431,14 +456,24 @@ sym_index ast_greaterthan::type_check()
 
 sym_index ast_procedurecall::type_check()
 {
-    /* Your code here */
+    /* code completed - add check if function/procedure */
+    type_checker->check_parameters(id, parameter_list);
     return void_type;
 }
 
 
 sym_index ast_assign::type_check()
 {
-    /* Your code here */
+    /* code completed */
+    sym_index left_expr = lhs->type_check();
+    sym_index right_expr = rhs->type_check();
+    if(left_expr==real_type && right_expr==integer_type)
+        rhs = new ast_cast(rhs->pos, rhs);
+    else if(left_expr==real_type && left_expr!=void_type){
+        return left_expr;
+    }
+
+    type_error(lhs->pos) << "type not match\n";
     return void_type;
 }
 
@@ -532,8 +567,9 @@ sym_index ast_uminus::type_check()
 {
     /* code completed */
     sym_index expr_res = expr->type_check();
-    if(expr_res)
+    if(expr_res!=void_type)
         type_error(pos) << "Bad return type from function.\n";
+    
     return expr_res;
 }
 
