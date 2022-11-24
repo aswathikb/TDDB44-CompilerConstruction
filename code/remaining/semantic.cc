@@ -43,15 +43,24 @@ bool semantic::chk_param(ast_id *env,
                         ast_expr_list *actuals)
 {
     /* code completed - might be wrong */
-    if(formals->last_parameter==NULL || actuals->preceding==NULL){
-        return formals->last_parameter==actuals->preceding;
+    if(formals->preceding==NULL || actuals->preceding==NULL){
+        if(formals->preceding==NULL && actuals->preceding!=NULL){
+            type_error() << "more parameter than formal\n";
+            return false;
+        }
+        if(formals->preceding!=NULL && actuals->preceding==NULL){
+            type_error() << "less parameter than formal\n";
+            return false;
+        }
+        return true;
     }
-    symbol *res_sym = sym_tab->get_symbol(lookup_symbol(formals->id));
-    if(res_sym->type!=actuals->last_expr.type_check()){
+    
+    if(formals->type!=actuals->last_expr->type_check()){
+        type_error() << "parameter do not match\n";
         return false;
     }
     
-    return chk_param(env, formals->last_parameter, actuals->preceding);
+    return chk_param(env, formals->preceding, actuals->preceding);
 }
 
 
@@ -69,6 +78,8 @@ void semantic::check_parameters(ast_id *call_id,
         function_symbol * func_sym = res_sym->get_function_symbol();
         if(!chk_param(call_id, func_sym->last_parameter, param_list))
             type_error() << "A function must return a value.\n";
+    } else {
+        type_error() << "not callable\n";
     }
 }
 
@@ -186,80 +197,44 @@ sym_index ast_indexed::type_check()
    multiplication. We synthesize type information as well. */
 sym_index semantic::check_binop1(ast_binaryoperation *node)
 {
-    /* Your code here */
-    return void_type; // You don't have to use this method but it might be convenient
+    /* code completed */
+    sym_index left_expr = node->left->type_check();
+    sym_index right_expr = node->right->type_check();
+    if(left_expr==integer_type && right_expr==integer_type)
+        return integer_type;
+    
+    if(left_expr!=real_type){
+        if(left_expr!=integer_type)
+            type_error(node->left->pos) << "Bad return type from function.\n";
+        else
+            node->left = new ast_cast(node->left->pos, node->left);
+    }
+    if(right_expr!=real_type){
+        if(right_expr!=integer_type)
+            type_error(node->right->pos) << "Bad return type from function.\n";
+        else
+            node->right = new ast_cast(node->right->pos, node->right);
+    }
+
+    return real_type;
 }
 
 sym_index ast_add::type_check()
 {
     /* code completed */
-    sym_index left_expr = left->type_check();
-    sym_index right_expr = right->type_check();
-    if(left_expr==integer_type && right_expr==integer_type)
-        return integer_type;
-    
-    if(left_expr!=real_type){
-        if(left_expr!=integer_type)
-            type_error(left->pos) << "Bad return type from function.\n";
-        else
-            left = new ast_cast(left->pos, left);
-    }
-    if(right_expr!=real_type){
-        if(right_expr!=integer_type)
-            type_error(right->pos) << "Bad return type from function.\n";
-        else
-            right = new ast_cast(right->pos, right);
-    }
-
-    return real_type;
+    return type_checker->check_binop1(this);
 }
 
 sym_index ast_sub::type_check()
 {
     /* code completed */
-    sym_index left_expr = left->type_check();
-    sym_index right_expr = right->type_check();
-    if(left_expr==integer_type && right_expr==integer_type)
-        return integer_type;
-    
-    if(left_expr!=real_type){
-        if(left_expr!=integer_type)
-            type_error(left->pos) << "Bad return type from function.\n";
-        else
-            left = new ast_cast(left->pos, left);
-    }
-    if(right_expr!=real_type){
-        if(right_expr!=integer_type)
-            type_error(right->pos) << "Bad return type from function.\n";
-        else
-            right = new ast_cast(right->pos, right);
-    }
-
-    return real_type;
+    return type_checker->check_binop1(this);
 }
 
 sym_index ast_mult::type_check()
 {
     /* code completed */
-    sym_index left_expr = left->type_check();
-    sym_index right_expr = right->type_check();
-    if(left_expr==integer_type && right_expr==integer_type)
-        return integer_type;
-    
-    if(left_expr!=real_type){
-        if(left_expr!=integer_type)
-            type_error(left->pos) << "Bad return type from function.\n";
-        else
-            left = new ast_cast(left->pos, left);
-    }
-    if(right_expr!=real_type){
-        if(right_expr!=integer_type)
-            type_error(right->pos) << "Bad return type from function.\n";
-        else
-            right = new ast_cast(right->pos, right);
-    }
-
-    return real_type;
+    return type_checker->check_binop1(this);
 }
 
 /* Divide is a special case, since it always returns real. We make sure the
@@ -296,48 +271,36 @@ sym_index ast_divide::type_check()
    */
 sym_index semantic::check_binop2(ast_binaryoperation *node, string s)
 {
-    /* Your code here */
-    return void_type;
+    /* code completed */
+    if(node->left->type_check() != integer_type)
+        type_error(node->left->pos) << s;
+    if(node->right->type_check() != integer_type)
+        type_error(node->right->pos) << s;
+    return integer_type;
 }
 
 sym_index ast_or::type_check()
 {
     /* code completed */
-    if(left->type_check() != integer_type)
-        type_error(left->pos) << "Bad return type from function.\n";
-    if(right->type_check() != integer_type)
-        type_error(right->pos) << "Bad return type from function.\n";
-    return integer_type;
+    return type_checker->check_binop2(this, "or wrong");
 }
 
 sym_index ast_and::type_check()
 {
     /* code completed */
-    if(left->type_check() != integer_type)
-        type_error(left->pos) << "Bad return type from function.\n";
-    if(right->type_check() != integer_type)
-        type_error(right->pos) << "Bad return type from function.\n";
-    return integer_type;
+    return type_checker->check_binop2(this, "and wrong");
 }
 
 sym_index ast_idiv::type_check()
 {
     /* code completed */
-    if(left->type_check() != integer_type)
-        type_error(left->pos) << "Bad return type from function.\n";
-    if(right->type_check() != integer_type)
-        type_error(right->pos) << "Bad return type from function.\n";
-    return integer_type;
+    return type_checker->check_binop2(this, "idiv wrong");
 }
 
 sym_index ast_mod::type_check()
 {
     /* code completed */
-    if(left->type_check() != integer_type)
-        type_error(left->pos) << "Bad return type from function.\n";
-    if(right->type_check() != integer_type)
-        type_error(right->pos) << "Bad return type from function.\n";
-    return integer_type;
+    return type_checker->check_binop2(this, "mod wrong");
 }
 
 
@@ -346,108 +309,51 @@ sym_index ast_mod::type_check()
    the same way. They all return integer types, 1 = true, 0 = false. */
 sym_index semantic::check_binrel(ast_binaryrelation *node)
 {
-    /* Your code here */
-    return void_type;
+    /* code completed */
+    sym_index left_expr = node->left->type_check();
+    sym_index right_expr = node->right->type_check();
+
+    if(left_expr==integer_type && right_expr==integer_type)
+        return integer_type;
+    
+    if(left_expr!=real_type){
+        if(left_expr!=integer_type)
+            type_error(node->left->pos) << "Bad return type from function.\n";
+        else
+            node->left = new ast_cast(node->left->pos, node->left);
+    }
+    if(right_expr!=real_type){
+        if(right_expr!=integer_type)
+            type_error(node->right->pos) << "Bad return type from function.\n";
+        else
+            node->right = new ast_cast(node->right->pos, node->right);
+    }
+
+    return integer_type;
 }
 
 sym_index ast_equal::type_check()
 {
     /* code completed */
-    sym_index left_expr = left->type_check();
-    sym_index right_expr = right->type_check();
-
-    if(left_expr==integer_type && right_expr==integer_type)
-        return integer_type;
-    
-    if(left_expr!=real_type){
-        if(left_expr!=integer_type)
-            type_error(left->pos) << "Bad return type from function.\n";
-        else
-            left = new ast_cast(left->pos, left);
-    }
-    if(right_expr!=real_type){
-        if(right_expr!=integer_type)
-            type_error(right->pos) << "Bad return type from function.\n";
-        else
-            right = new ast_cast(right->pos, right);
-    }
-
-    return integer_type;
+    return type_checker->check_binrel(this);
 }
 
 sym_index ast_notequal::type_check()
 {
     /* code completed */
-    sym_index left_expr = left->type_check();
-    sym_index right_expr = right->type_check();
-
-    if(left_expr==integer_type && right_expr==integer_type)
-        return integer_type;
-    
-    if(left_expr!=real_type){
-        if(left_expr!=integer_type)
-            type_error(left->pos) << "Bad return type from function.\n";
-        else
-            left = new ast_cast(left->pos, left);
-    }
-    if(right_expr!=real_type){
-        if(right_expr!=integer_type)
-            type_error(right->pos) << "Bad return type from function.\n";
-        else
-            right = new ast_cast(right->pos, right);
-    }
-
-    return integer_type;
+    return type_checker->check_binrel(this);
 }
 
 sym_index ast_lessthan::type_check()
 {
     /* code completed */
-    sym_index left_expr = left->type_check();
-    sym_index right_expr = right->type_check();
-
-    if(left_expr==integer_type && right_expr==integer_type)
-        return integer_type;
-    
-    if(left_expr!=real_type){
-        if(left_expr!=integer_type)
-            type_error(left->pos) << "Bad return type from function.\n";
-        else
-            left = new ast_cast(left->pos, left);
-    }
-    if(right_expr!=real_type){
-        if(right_expr!=integer_type)
-            type_error(right->pos) << "Bad return type from function.\n";
-        else
-            right = new ast_cast(right->pos, right);
-    }
-
-    return integer_type;
+    return type_checker->check_binrel(this);
 }
 
 sym_index ast_greaterthan::type_check()
 {
     /* code completed */
-    sym_index left_expr = left->type_check();
-    sym_index right_expr = right->type_check();
-
-    if(left_expr==integer_type && right_expr==integer_type)
-        return integer_type;
-    
-    if(left_expr!=real_type){
-        if(left_expr!=integer_type)
-            type_error(left->pos) << "Bad return type from function.\n";
-        else
-            left = new ast_cast(left->pos, left);
-    }
-    if(right_expr!=real_type){
-        if(right_expr!=integer_type)
-            type_error(right->pos) << "Bad return type from function.\n";
-        else
-            right = new ast_cast(right->pos, right);
-    }
-
-    return integer_type;
+    return type_checker->check_binrel(this);
 }
 
 
@@ -496,7 +402,7 @@ sym_index ast_if::type_check()
 {
     /* code completed */
     if (condition->type_check() != integer_type) {
-        type_error(condition->pos) << "while predicate must be of integer "
+        type_error(condition->pos) << "if predicate must be of integer "
                                    << "type.\n";
     }
 
@@ -559,8 +465,13 @@ sym_index ast_return::type_check()
 
 sym_index ast_functioncall::type_check()
 {
-    /* Your code here */
-    return void_type;
+    /* code completed */
+    symbol *res_sym = sym_tab->get_symbol(id->sym_p);
+    if(res_sym->tag!=SYM_FUNC){
+        type_error(pos) << "not defined as func\n";
+    }
+    type_checker->check_parameters(id, parameter_list);
+    return type;
 }
 
 sym_index ast_uminus::type_check()
@@ -586,6 +497,13 @@ sym_index ast_not::type_check()
 sym_index ast_elsif::type_check()
 {
     /* Your code here */
+    if (condition->type_check() != integer_type) {
+        type_error(condition->pos) << "while predicate must be of integer "
+                                   << "type.\n";
+    }
+    if (body != NULL) {
+        body->type_check();
+    }
     return void_type;
 }
 
