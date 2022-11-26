@@ -45,18 +45,18 @@ bool semantic::chk_param(ast_id *env,
     /* code completed - might be wrong */
     if(formals==NULL || actuals==NULL){
         if(formals==NULL && actuals!=NULL){
-            type_error() << "more parameter than formal\n";
+            type_error(actuals->pos) << "More actual than formal parameters.\n";
             return false;
         }
         if(formals!=NULL && actuals==NULL){
-            type_error() << "less parameter than formal\n";
+            type_error(env->pos) << "More formal than actual parameters.\n";
             return false;
         }
         return true;
     }
     
     if(formals->type!=actuals->last_expr->type_check()){
-        type_error() << "parameter do not match\n";
+        type_error(actuals->pos) << "Type discrepancy between formal and actual parameters.\n";
         return false;
     }
     
@@ -72,12 +72,10 @@ void semantic::check_parameters(ast_id *call_id,
     symbol *res_sym = sym_tab->get_symbol(call_id->sym_p);
     if(res_sym->tag==SYM_PROC){
         procedure_symbol * proc_sym = res_sym->get_procedure_symbol();
-        if(!chk_param(call_id, proc_sym->last_parameter, param_list))
-            type_error() << "A function must return a value.\n";
+        chk_param(call_id, proc_sym->last_parameter, param_list);
     } else if(res_sym->tag==SYM_FUNC){
         function_symbol * func_sym = res_sym->get_function_symbol();
-        if(!chk_param(call_id, func_sym->last_parameter, param_list))
-            type_error() << "A function must return a value.\n";
+        chk_param(call_id, func_sym->last_parameter, param_list);
     } else {
         type_error() << "not callable\n";
     }
@@ -180,7 +178,7 @@ sym_index ast_indexed::type_check()
     /* code completed - question */
     array_symbol *arr_sym = sym_tab->get_symbol(id->sym_p)->get_array_symbol();
     if (arr_sym->tag != SYM_ARRAY){
-        error(pos) << "Can't index \n";
+        error(pos) << "Can't index not an array \n";
         return void_type;
     }
 
@@ -202,11 +200,11 @@ sym_index semantic::check_binop1(ast_binaryoperation *node)
     sym_index right_expr = node->right->type_check();
     // cout << sym_tab->pool_lookup(sym_tab->get_symbol(left_expr)->id) << "  " << sym_tab->pool_lookup(sym_tab->get_symbol(right_expr)->id);
     if(left_expr==void_type){
-        type_error(node->left->pos) << "can use void\n";
+        type_error(node->left->pos) << "binoperation cant use void\n";
         return right_expr; // check
     }
     if(right_expr==void_type){
-        type_error(node->right->pos) << "can use void\n";
+        type_error(node->right->pos) << "binoperation cant use void\n";
         return left_expr; // check
     }
 
@@ -253,16 +251,16 @@ sym_index ast_divide::type_check()
     /* code completed */
     sym_index left_expr = left->type_check();
     if(left_expr != real_type){
-        if(left_expr != integer_type){
-            type_error(left->pos) << "divide\n";
+        if(left_expr == void_type){
+            type_error(left->pos) << "cant divide void \n";
         }else{
             left = new ast_cast(left->pos, left);
         }
     }
     sym_index right_expr = right->type_check();
     if(right->type_check() != real_type){
-        if(right_expr != integer_type){
-            type_error(right->pos) << "divide.\n";
+        if(right_expr == void_type){
+            type_error(right->pos) << "cant divide with a void.\n";
         }else{
             right = new ast_cast(right->pos, right);
         }
@@ -394,7 +392,9 @@ sym_index ast_assign::type_check()
         return left_expr;
     }
 
-    type_error(lhs->pos) << "type not match\n";
+    type_error(rhs->pos) << "Can't assign a " << sym_tab->pool_lookup(sym_tab->get_symbol_id(right_expr)) 
+                         << " value to " << sym_tab->pool_lookup(sym_tab->get_symbol_id(left_expr)) 
+                         << " variable.\n";
     return void_type;
 }
 
@@ -513,7 +513,7 @@ sym_index ast_elsif::type_check()
 {
     /* Your code here */
     if (condition->type_check() != integer_type) {
-        type_error(condition->pos) << "while predicate must be of integer "
+        type_error(condition->pos) << "elsif predicate must be of integer "
                                    << "type.\n";
     }
     if (body != NULL) {

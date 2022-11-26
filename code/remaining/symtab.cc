@@ -378,6 +378,7 @@ char *symbol_table::capitalize(const char *s)
 pool_index symbol_table::pool_install(char *s)
 {
     // Make sure pool is not full. If it is, double pool size.
+    //cout << s << "\n";
     if (pool_pos + 1 + (int) strlen(s) >= pool_length) {
         char *tmp_pool = new char[2 * pool_length];
 
@@ -672,8 +673,8 @@ sym_index symbol_table::install_symbol(const pool_index pool_p,
 {
     /*auto aaa = pool_lookup(pool_p);
     cout << "\n" << aaa << ":\n";
-    cout << "current hash: " << hash(pool_p) << "\n";
-    print(3);*/
+    cout << "current hash: " << hash(pool_p) << "\n";*/
+    
     /* Your code here */
     sym_index lookup_result = lookup_symbol(pool_p);
     //cout << "found " << lookup_result << "\n";
