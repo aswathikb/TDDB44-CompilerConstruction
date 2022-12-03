@@ -166,7 +166,7 @@ program         : prog_decl subprog_part comp_stmt T_DOT
 
                     // We close the global scope.
                     sym_tab->close_scope();
-                }
+                } // error message needed?
                 ;
 
 
@@ -192,7 +192,7 @@ prog_head       : T_PROGRAM T_IDENT
 
 
 const_part      : T_CONST const_decls
-                | error const_decls
+                | error const_decls { yyerrok; }
                 | /* empty */
                 ;
 
@@ -254,6 +254,12 @@ const_decl      : T_IDENT T_EQ integer T_SEMICOLON
                                             const_sym->const_value.rval);
 
                 }
+                | error T_SEMICOLON {
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    yyerrok;
+                    }
                 
                 ;
 
@@ -517,6 +523,7 @@ opt_param_list  : T_LEFTPAR param_list T_RIGHTPAR
                 }
                 | T_LEFTPAR error T_RIGHTPAR
                 {
+                    yyerrok;
                     $$ = NULL;
                 }
                 | /* empty */
@@ -659,7 +666,21 @@ stmt            : T_IF expr T_THEN stmt_list elsif_list else_part T_END
                                                  @1.first_column);
                     $$ = new ast_return(pos);
                 }
-                
+                // TODO: check
+                | lvariable T_EQ expr
+                {
+                   /* code completed */
+                    position_information *pos =
+                        new position_information(@1.first_line,
+                                                 @1.first_column);
+                    error(pos) << "not a valid assignment";
+                    $$ = NULL;
+                }
+                | error stmt
+                {
+                    yyerrok;
+                    $$ = $2;
+                }
                 | /* empty */
                 {
                     /* code complete */
@@ -679,6 +700,7 @@ lvariable       : lvar_id
                 }
                 | array_id T_LEFTBRACKET error T_RIGHTBRACKET
                 {
+                    yyerrok;
                     $$ = NULL;
                 }
                 ;
@@ -696,7 +718,11 @@ rvariable       : rvar_id
                                          $1,
                                          $3);
                 }
-                
+                | array_id T_LEFTBRACKET error T_RIGHTBRACKET
+                {
+                    yyerrok;
+                    $$ = NULL;
+                }
                 ;
 
 
