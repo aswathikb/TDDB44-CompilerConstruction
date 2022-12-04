@@ -140,8 +140,56 @@ void ast_indexed::optimize()
    original node if no optimization could be performed. */
 ast_expression *ast_optimizer::fold_constants(ast_expression *node)
 {
-    /* Your code here */
-    return NULL;
+    /* code completed */
+    if(is_binop(node)){
+        ast_binaryoperation *binoper = node->get_ast_binaryoperation();
+        ast_expression *left_expr = binoper->left;
+        ast_expression *right_expr = binoper->right;
+
+        switch(node->tag){
+            case AST_ADD:
+                if (left_expr->tag == AST_INTEGER && right_expr->tag == AST_INTEGER)
+                    return new ast_integer(left_expr->pos, left_expr->get_ast_integer()->value + right_expr->get_ast_integer()->value);
+                else if (left_expr->tag == AST_REAL && right_expr->tag == AST_REAL)
+                    return new ast_real(left_expr->pos, left_expr->get_ast_real()->value + right_expr->get_ast_real()->value);
+                break;
+            case AST_AND:
+                if (left_expr->tag == AST_INTEGER && right_expr->tag == AST_INTEGER)
+                    return new ast_integer(left_expr->pos, left_expr->get_ast_integer()->value && right_expr->get_ast_integer()->value);
+                break;
+            case AST_DIVIDE:
+                if (left_expr->tag == AST_REAL && right_expr->tag == AST_REAL)
+                    return new ast_real(left_expr->pos, left_expr->get_ast_real()->value / right_expr->get_ast_real()->value);
+                break;
+            case AST_IDIV:
+                if (left_expr->tag == AST_INTEGER && right_expr->tag == AST_INTEGER)
+                    return new ast_integer(left_expr->pos, left_expr->get_ast_integer()->value / right_expr->get_ast_integer()->value);
+                break;
+            case AST_MOD:
+                if (left_expr->tag == AST_INTEGER && right_expr->tag == AST_INTEGER)
+                    return new ast_integer(left_expr->pos, left_expr->get_ast_integer()->value % right_expr->get_ast_integer()->value);
+                break;
+            case AST_MULT:
+                if (left_expr->tag == AST_INTEGER && right_expr->tag == AST_INTEGER)
+                    return new ast_integer(left_expr->pos, left_expr->get_ast_integer()->value * right_expr->get_ast_integer()->value);
+                else if (left_expr->tag == AST_REAL && right_expr->tag == AST_REAL)
+                    return new ast_real(left_expr->pos, left_expr->get_ast_real()->value * right_expr->get_ast_real()->value);
+                break;    
+            case AST_OR:
+                if (left_expr->tag == AST_INTEGER && right_expr->tag == AST_INTEGER)
+                    return new ast_integer(left_expr->pos, left_expr->get_ast_integer()->value || right_expr->get_ast_integer()->value);
+                break;
+            case AST_SUB:
+                if (left_expr->tag == AST_INTEGER && right_expr->tag == AST_INTEGER)
+                    return new ast_integer(left_expr->pos, left_expr->get_ast_integer()->value - right_expr->get_ast_integer()->value);
+                else if (left_expr->tag == AST_REAL && right_expr->tag == AST_REAL)
+                    return new ast_real(left_expr->pos, left_expr->get_ast_real()->value - right_expr->get_ast_real()->value);
+            default:
+                break;
+        }
+    }
+
+    return node;
 }
 
 /* All the binary operations should already have been detected in their parent
