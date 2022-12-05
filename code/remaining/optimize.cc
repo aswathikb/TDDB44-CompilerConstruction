@@ -94,15 +94,13 @@ void ast_stmt_list::optimize()
 /* Optimize a list of expressions. */
 void ast_expr_list::optimize()
 {
-    /* Your code here */
+    /* code completed */
     if (preceding != NULL) {
         preceding->optimize();
     }
     if (last_expr != NULL) {
         last_expr->optimize();
     }
-
-
 }
 
 
@@ -130,7 +128,7 @@ void ast_id::optimize()
 void ast_indexed::optimize()
 {
     /* code completed */
-    index = optimize->fold_constants(index);
+    index = optimizer->fold_constants(index);
 }
 
 
@@ -192,62 +190,70 @@ ast_expression *ast_optimizer::fold_constants(ast_expression *node)
     return node;
 }
 
+/* own function definition for binaryoperation to reduce code redundant code */
+void ast_optimizer::optimize_binop(ast_binaryoperation* binop_node){
+    binop_node->right->optimize();
+    binop_node->left->optimize();   
+    binop_node->right = optimizer->fold_constants(binop_node->right);
+    binop_node->left = optimizer->fold_constants(binop_node->left);
+}
+
+/* own function definition for binaryrelation to reduce code redundant code */
+void ast_optimizer::optimize_binrel(ast_binaryrelation* binrel_node){
+    binrel_node->right->optimize();
+    binrel_node->left->optimize();   
+    binrel_node->right = optimizer->fold_constants(binrel_node->right);
+    binrel_node->left = optimizer->fold_constants(binrel_node->left);
+}
+
 /* All the binary operations should already have been detected in their parent
    nodes, so we don't need to do anything at all here. */
 void ast_add::optimize()
 {
     /* code completed */
-    right = optimizer ->fold_constants(right);
-    left = optimizer ->fold_constants(left);
+    optimizer->optimize_binop(this);
 }
 
 void ast_sub::optimize()
 {
     /* code completed */
-    right = optimizer ->fold_constants(right);
-    left = optimizer ->fold_constants(left);
+    optimizer->optimize_binop(this);
 }
 
 void ast_mult::optimize()
 {
     /* code completed */
-    right = optimizer ->fold_constants(right);
-    left = optimizer ->fold_constants(left);
+    optimizer->optimize_binop(this);
 }
 
 void ast_divide::optimize()
 {
     /* code completed */
-    right = optimizer ->fold_constants(right);
-    left = optimizer ->fold_constants(left);
+    optimizer->optimize_binop(this);
 }
 
 void ast_or::optimize()
 {
     /* code completed */
-    right = optimizer ->fold_constants(right);
-    left = optimizer ->fold_constants(left);
+    optimizer->optimize_binop(this);
 }
 
 void ast_and::optimize()
 {
     /* code completed */
-    right = optimizer ->fold_constants(right);
-    left = optimizer ->fold_constants(left);
+    optimizer->optimize_binop(this);
 }
 
 void ast_idiv::optimize()
 {
     /* code completed */
-    right = optimizer ->fold_constants(right);
-    left = optimizer ->fold_constants(left);
+    optimizer->optimize_binop(this);
 }
 
 void ast_mod::optimize()
 {
     /* code completed */
-    right = optimizer ->fold_constants(right);
-    left = optimizer ->fold_constants(left);
+    optimizer->optimize_binop(this);
 }
 
 
@@ -256,29 +262,25 @@ void ast_mod::optimize()
 void ast_equal::optimize()
 {
     /* code completed */
-    right = optimizer ->fold_constants(right);
-    left = optimizer ->fold_constants(left);
+    optimizer->optimize_binrel(this);
 }
 
 void ast_notequal::optimize()
 {
     /* code completed */
-    right = optimizer ->fold_constants(right);
-    left = optimizer ->fold_constants(left);
+    optimizer->optimize_binrel(this);
 }
 
 void ast_lessthan::optimize()
 {
     /* code completed */
-    right = optimizer ->fold_constants(right);
-    left = optimizer ->fold_constants(left);
+    optimizer->optimize_binrel(this);
 }
 
 void ast_greaterthan::optimize()
 {
     /* code completed */
-    right = optimizer ->fold_constants(right);
-    left = optimizer ->fold_constants(left);
+    optimizer->optimize_binrel(this);
 }
 
 
@@ -289,21 +291,24 @@ void ast_procedurecall::optimize()
 {
     /* code completed */
     if(parameter_list != NULL)
-        parameter_list -> optimize();
+        parameter_list->optimize();
 }
 
 
 void ast_assign::optimize()
 {
     /* code completed */
-    rhs = optimizer ->fold_constants(rhs);
+    lhs->optimize();
+    rhs->optimize();
+    rhs = optimizer->fold_constants(rhs);
 }
 
 
 void ast_while::optimize()
 {
     /* code completed  */
-    condition = optimizer ->fold_constants(condition);
+    condition->optimize();
+    condition = optimizer->fold_constants(condition);
     if (body != NULL) {
         body->optimize();
     }
@@ -313,7 +318,8 @@ void ast_while::optimize()
 void ast_if::optimize()
 {
     /* code completed */
-    condition = optimizer ->fold_constants(condition);
+    condition->optimize();
+    condition = optimizer->fold_constants(condition);
     if (body != NULL) {
         body->optimize();
     }
@@ -330,8 +336,10 @@ void ast_if::optimize()
 void ast_return::optimize()
 {
     /* code completed */
-    if(value != NULL)
+    if(value != NULL){
+        value->optimize();
         value = optimizer->fold_constants(value);
+    }
 }
 
 
@@ -345,44 +353,48 @@ void ast_functioncall::optimize()
 void ast_uminus::optimize()
 {
     /* code completed */
-    expr = optimizer -> fold_constants(expr);
+    expr->optimize();
+    expr = optimizer->fold_constants(expr);
 }
 
 void ast_not::optimize()
 {
     /* code completed*/
-    expr = optimizer ->fold_constants(expr);
+    expr->optimize();
+    expr = optimizer->fold_constants(expr);
 }
 
 
 void ast_elsif::optimize()
 {
     /* code completed */
-    if (preceding != NULL) {
-        preceding->optimize();
+    condition->optimize();
+    condition = optimizer->fold_constants(condition);
+    if (body != NULL) {
+        body->optimize();
     }
-    if (last_elsif != NULL) {
-        last_elsif->optimize();
-    }
-
 }
 
 
 
 void ast_integer::optimize()
 {
-    /* Your code here */
+    /* code completed */
+    // nothing can be done here
 }
 
 void ast_real::optimize()
 {
-    /* Your code here */
+    /* code completed */
+    // nothing can be done here
 }
 
 /* Note: See the comment in fold_constants() about casts and folding. */
 void ast_cast::optimize()
 {
-    /* Your code here */
+    /* code completed */
+    expr->optimize();
+    expr = optimizer->fold_constants(expr);
 }
 
 

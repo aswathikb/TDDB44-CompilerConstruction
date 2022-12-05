@@ -45,6 +45,12 @@ public:
       a static method in the optimize.cc file... A matter of preference.
      */
     ast_expression *fold_constants(ast_expression *);
+
+    /* own function definition for binaryoperations to reduce code redundant code */
+    void optimize_binop(ast_binaryoperation* binop_node);
+
+    /* own function definition for binaryrelations to reduce code redundant code */
+    void optimize_binrel(ast_binaryrelation* binrel_node);
 };
 
 
