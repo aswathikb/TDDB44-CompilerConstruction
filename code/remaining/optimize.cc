@@ -100,6 +100,7 @@ void ast_expr_list::optimize()
     }
     if (last_expr != NULL) {
         last_expr->optimize();
+        last_expr = optimizer->fold_constants(last_expr);
     }
 }
 
@@ -143,6 +144,29 @@ ast_expression *ast_optimizer::fold_constants(ast_expression *node)
         ast_binaryoperation *binoper = node->get_ast_binaryoperation();
         ast_expression *left_expr = binoper->left;
         ast_expression *right_expr = binoper->right;
+        
+        ast_id* id_check_left = left_expr->get_ast_id();
+        ast_id* id_check_right = right_expr->get_ast_id();
+        if(id_check_left != NULL){
+            symbol *res_sym = sym_tab->get_symbol(id_check_left->sym_p);
+            if(res_sym->tag==SYM_CONST && res_sym->type == integer_type){
+                constant_symbol *cos_sym = res_sym->get_constant_symbol();
+                left_expr = new ast_integer(left_expr->pos, cos_sym->const_value.ival);
+            } else if(res_sym->tag==SYM_CONST && res_sym->type == real_type){
+                constant_symbol *cos_sym = res_sym->get_constant_symbol();
+                left_expr = new ast_real(left_expr->pos, cos_sym->const_value.ival);
+            }
+        }
+        if(id_check_right != NULL){
+            symbol *res_sym = sym_tab->get_symbol(id_check_right->sym_p);
+            if(res_sym->tag==SYM_CONST && res_sym->type == integer_type){
+                constant_symbol *cos_sym = res_sym->get_constant_symbol();
+                right_expr = new ast_integer(right_expr->pos, cos_sym->const_value.ival);
+            } else if(res_sym->tag==SYM_CONST && res_sym->type == real_type){
+                constant_symbol *cos_sym = res_sym->get_constant_symbol();
+                right_expr = new ast_real(right_expr->pos, cos_sym->const_value.ival);
+            }
+        }
 
         switch(node->tag){
             case AST_ADD:
@@ -346,8 +370,9 @@ void ast_return::optimize()
 void ast_functioncall::optimize()
 {
     /* code completed */
-    if(parameter_list != NULL)
+    if(parameter_list != NULL){
         parameter_list ->optimize();
+    }
 }
 
 void ast_uminus::optimize()
