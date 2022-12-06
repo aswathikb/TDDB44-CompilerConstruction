@@ -174,7 +174,16 @@ long symbol_table::get_next_label()
    an error. This method is used for quad generation. */
 sym_index symbol_table::gen_temp_var(sym_index type)
 {
-    /* Your code here */
+    /* code completed */
+    sym_tab->temp_nr++;
+    string tmpname = "$"+to_string(sym_tab->temp_nr);
+    pool_index pool_tmp = pool_install(const_cast<char*>(tmpname.c_str()));
+    if(type==integer_type)
+        return enter_variable(pool_tmp, type);
+    else if(type==real_type)
+        return enter_variable(pool_tmp, type);
+    
+    fatal("temporary variable should not be initialized with voidtype");
     return NULL_SYM;
 }
 
