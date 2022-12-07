@@ -175,12 +175,9 @@ long symbol_table::get_next_label()
 sym_index symbol_table::gen_temp_var(sym_index type)
 {
     /* code completed */
-    sym_tab->temp_nr++;
-    string tmpname = "$"+to_string(sym_tab->temp_nr);
+    string tmpname = "$"+to_string(sym_tab->get_next_label());
     pool_index pool_tmp = pool_install(const_cast<char*>(tmpname.c_str()));
-    if(type==integer_type)
-        return enter_variable(pool_tmp, type);
-    else if(type==real_type)
+    if(type==integer_type || type==real_type)
         return enter_variable(pool_tmp, type);
     
     fatal("temporary variable should not be initialized with voidtype");
