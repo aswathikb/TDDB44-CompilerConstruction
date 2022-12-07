@@ -129,7 +129,12 @@ sym_index ast_elsif_list::generate_quads(quad_list &q)
 sym_index ast_elsif::generate_quads(quad_list &q)
 {
     USE_Q;
-    /* Your code here */
+    /* code completed */
+    int skip = sym_tab->get_next_label();
+    sym_index pos = condition->generate_quads(q);
+    q += new quadruple(q_jmpf, skip, pos, NULL_SYM);
+    body->generate_quads(q);
+    q += new quadruple(q_labl, skip, NULL_SYM, NULL_SYM);
     return NULL_SYM;
 }
 
@@ -137,24 +142,28 @@ sym_index ast_elsif::generate_quads(quad_list &q)
 sym_index ast_id::generate_quads(quad_list &q)
 {
     USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+    /* code completed */
+    return sym_p;
 }
 
 
 sym_index ast_integer::generate_quads(quad_list &q)
 {
     USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+    /* code completed */
+    sym_index result_pos = sym_tab->gen_temp_var(type);
+    q += new quadruple(q_iload, value, NULL_SYM, result_pos);
+    return result_pos;
 }
 
 
 sym_index ast_real::generate_quads(quad_list &q)
 {
     USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+    /* code completed */
+    sym_index result_pos = sym_tab->gen_temp_var(type);
+    q += new quadruple(q_rload, sym_tab->ieee(value), NULL_SYM, result_pos);
+    return result_pos;
 }
 
 
@@ -196,7 +205,7 @@ sym_index ast_uminus::generate_quads(quad_list &q)
 sym_index ast_cast::generate_quads(quad_list &q)
 {
     USE_Q;
-    /* Your code here */
+    /* code completed */
     sym_index result_pos = sym_tab->gen_temp_var(real_type);
     sym_index pos = expr->generate_quads(q);
     q += new quadruple(q_itor, pos, NULL_SYM, result_pos);
@@ -374,7 +383,10 @@ void ast_expr_list::generate_parameter_list(quad_list &q,
         int *nr_params)
 {
     USE_Q;
-    /* Your code here */
+    /* Your code here - continue */
+    if(last_param == NULL){ return;}
+
+    // q += new quadruple(q_param, top, NULL_SYM, NULL_SYM);
 }
 
 
