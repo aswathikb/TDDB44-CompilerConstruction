@@ -169,16 +169,27 @@ sym_index ast_real::generate_quads(quad_list &q)
 sym_index ast_not::generate_quads(quad_list &q)
 {
     USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+    /* code completed */
+    sym_index result_pos = sym_tab->gen_temp_var(type);
+    sym_index pos = expr->generate_quads(q);
+    q += new quadruple(q_inot, pos, NULL_SYM, result_pos);
+    return result_pos;
 }
 
 
 sym_index ast_uminus::generate_quads(quad_list &q)
 {
     USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+    /* code completed */
+    sym_index result_pos = sym_tab->gen_temp_var(type);
+    sym_index pos = expr->generate_quads(q);
+    if(type == integer_type){
+        q += new quadruple(q_iuminus, pos, NULL_SYM, result_pos);
+    }
+    else if(type == real_type){
+        q += new quadruple(q_ruminus, pos, NULL_SYM, result_pos);
+    }
+    return result_pos;
 }
 
 
@@ -186,94 +197,125 @@ sym_index ast_cast::generate_quads(quad_list &q)
 {
     USE_Q;
     /* Your code here */
-    return NULL_SYM;
+    sym_index result_pos = sym_tab->gen_temp_var(real_type);
+    sym_index pos = expr->generate_quads(q);
+    q += new quadruple(q_itor, pos, NULL_SYM, result_pos);
+    return result_pos;
+   
 }
 
+// function here: add, sub, mult, div
+sym_index do_binaryoperation(quad_list &q, quad_op_type int_op, quad_op_type real_op, ast_binaryoperation *node){
+    sym_index pos_left = node->left->generate_quads(q);
+    sym_index pos_right = node->right->generate_quads(q);
+    sym_index result_pos = sym_tab->gen_temp_var(node->type);
+    if(node->type == integer_type){
+        q += new quadruple(int_op, pos_left, pos_right, result_pos);
+    }
+    else if(node->type == real_type){
+        q += new quadruple(real_op, pos_left, pos_right, result_pos);
+    }
+    return result_pos;
+}
 
 sym_index ast_add::generate_quads(quad_list &q)
 {
     USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+    /* code completd */
+    return do_binaryoperation(q, q_iplus, q_rplus, this);
 }
 
 sym_index ast_sub::generate_quads(quad_list &q)
 {
     USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+     /* code completd */
+    return do_binaryoperation(q, q_iminus, q_rminus, this);
 }
 
 sym_index ast_mult::generate_quads(quad_list &q)
 {
     USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+    /* code completd */
+    return do_binaryoperation(q, q_imult, q_rmult, this);
 }
 
 sym_index ast_divide::generate_quads(quad_list &q)
 {
     USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+    /* code completd */
+    return do_binaryoperation(q, q_nop, q_rdivide, this);
 }
 
+// function here: idiv, and, or, mod
 sym_index ast_idiv::generate_quads(quad_list &q)
 {
     USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+    /* code completd */
+    return do_binaryoperation(q, q_idivide, q_nop, this);
 }
 
 sym_index ast_mod::generate_quads(quad_list &q)
 {
     USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+    /* code completd */
+    return do_binaryoperation(q, q_imod, q_nop, this);
 }
 
 sym_index ast_or::generate_quads(quad_list &q)
 {
     USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+    /* code completd */
+    return do_binaryoperation(q, q_ior, q_nop, this);
 }
 
 sym_index ast_and::generate_quads(quad_list &q)
 {
     USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+    /* code completd */
+    return do_binaryoperation(q, q_iand, q_nop, this);
 }
 
 
+// function here: equal, gt, ls, note
+sym_index do_binaryrelation(quad_list &q, quad_op_type int_op, quad_op_type real_op, ast_binaryrelation *node){
+    sym_index pos_left = node->left->generate_quads(q);
+    sym_index pos_right = node->right->generate_quads(q);
+    sym_index result_pos = sym_tab->gen_temp_var(node->type);
+    if(node->left->type == integer_type){
+        q += new quadruple(int_op, pos_left, pos_right, result_pos);
+    }
+    else if(node->left->type == real_type){
+        q += new quadruple(real_op, pos_left, pos_right, result_pos);
+    }
+    return result_pos;
+}
 
 sym_index ast_equal::generate_quads(quad_list &q)
 {
     USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+    /* code completd */
+    return do_binaryrelation(q, q_ieq, q_req, this);
 }
 
 sym_index ast_notequal::generate_quads(quad_list &q)
 {
     USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+    /* code completd */
+    return do_binaryrelation(q, q_ine, q_rne, this);
 }
 
 sym_index ast_lessthan::generate_quads(quad_list &q)
 {
     USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+    /* code completd */
+    return do_binaryrelation(q, q_ilt, q_rlt, this);
 }
 
 sym_index ast_greaterthan::generate_quads(quad_list &q)
 {
     USE_Q;
-    /* Your code here */
-    return NULL_SYM;
+    /* code completd */
+    return do_binaryrelation(q, q_igt, q_rgt, this);
 }
 
 
@@ -350,6 +392,7 @@ sym_index ast_functioncall::generate_quads(quad_list &q)
 {
     USE_Q;
     /* Your code here */
+    // parameter_list->generate_parameter_list(q, sym_tab[id->sym_p]->get_parameter_symbol(), 0);
     return NULL_SYM;
 }
 
