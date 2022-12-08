@@ -185,7 +185,8 @@ sym_index ast_indexed::type_check()
     if (index->type_check() != integer_type)
         type_error(index->pos) << "index must be of type integer!\n";
 
-    return arr_sym->type;
+    type = arr_sym->type;
+    return type;
 }
 
 

@@ -175,7 +175,8 @@ long symbol_table::get_next_label()
 sym_index symbol_table::gen_temp_var(sym_index type)
 {
     /* code completed */
-    string tmpname = "$"+to_string(sym_tab->temp_nr++);
+    sym_tab->temp_nr++;
+    string tmpname = "$"+to_string(sym_tab->temp_nr); // differnce here because the sample solution adds unnecassary whitespaces
     pool_index pool_tmp = pool_install(const_cast<char*>(tmpname.c_str()));
     if(type==integer_type || type==real_type)
         return enter_variable(pool_tmp, type);
@@ -678,8 +679,7 @@ sym_index symbol_table::install_symbol(const pool_index pool_p,
                                        const sym_type tag)
 {
     /*auto aaa = pool_lookup(pool_p);
-    cout << "\n" << aaa << ":\n";
-    cout << "current hash: " << hash(pool_p) << "\n";*/
+    cout << aaa << ": " << hash(pool_p) << "\n";*/
     
     /* Your code here */
     sym_index lookup_result = lookup_symbol(pool_p);

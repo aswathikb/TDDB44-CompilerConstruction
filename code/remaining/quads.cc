@@ -179,8 +179,8 @@ sym_index ast_not::generate_quads(quad_list &q)
 {
     USE_Q;
     /* code completed */
-    sym_index result_pos = sym_tab->gen_temp_var(type);
     sym_index pos = expr->generate_quads(q);
+    sym_index result_pos = sym_tab->gen_temp_var(type);
     q += new quadruple(q_inot, pos, NULL_SYM, result_pos);
     return result_pos;
 }
@@ -190,8 +190,8 @@ sym_index ast_uminus::generate_quads(quad_list &q)
 {
     USE_Q;
     /* code completed */
-    sym_index result_pos = sym_tab->gen_temp_var(type);
     sym_index pos = expr->generate_quads(q);
+    sym_index result_pos = sym_tab->gen_temp_var(type);
     if(type == integer_type){
         q += new quadruple(q_iuminus, pos, NULL_SYM, result_pos);
     }
@@ -206,8 +206,8 @@ sym_index ast_cast::generate_quads(quad_list &q)
 {
     USE_Q;
     /* code completed */
-    sym_index result_pos = sym_tab->gen_temp_var(real_type);
     sym_index pos = expr->generate_quads(q);
+    sym_index result_pos = sym_tab->gen_temp_var(real_type);
     q += new quadruple(q_itor, pos, NULL_SYM, result_pos);
     return result_pos;
    
@@ -384,11 +384,13 @@ void ast_expr_list::generate_parameter_list(quad_list &q,
 {
     USE_Q;
     /* code continued */
-    if(preceding == NULL){ return; }
 
     sym_index pos = last_expr->generate_quads(q);
     q += new quadruple(q_param, pos, NULL_SYM, NULL_SYM);
-    preceding->generate_parameter_list(q, NULL, nr_params++);
+    (*nr_params)++;
+
+    if(preceding != NULL)
+        preceding->generate_parameter_list(q, NULL, nr_params);
 }
 
 
@@ -400,7 +402,7 @@ sym_index ast_procedurecall::generate_quads(quad_list &q)
     int nr_params = 0;
     if (parameter_list != NULL)
         parameter_list->generate_parameter_list(q, NULL, &nr_params);
-    q += new quadruple(q_param, id->sym_p, nr_params, NULL_SYM);
+    q += new quadruple(q_call, id->sym_p, nr_params, NULL_SYM);
     return NULL_SYM;
 }
 
@@ -411,10 +413,10 @@ sym_index ast_functioncall::generate_quads(quad_list &q)
     USE_Q;
     /* code completed */
     int nr_params = 0;
+    sym_index result_pos = sym_tab->gen_temp_var(type);
     if (parameter_list != NULL)
         parameter_list->generate_parameter_list(q, NULL, &nr_params);
-    sym_index result_pos = sym_tab->gen_temp_var(type);
-    q += new quadruple(q_param, id->sym_p, nr_params, result_pos);
+    q += new quadruple(q_call, id->sym_p, nr_params, result_pos);
     return result_pos;
 }
 
@@ -482,8 +484,8 @@ sym_index ast_if::generate_quads(quad_list &q)
 {
     USE_Q;
     /* code completed */
-    int end = sym_tab->get_next_label();
-    int skip = sym_tab->get_next_label(); // maybe check if elsif exists or not
+    int skip = sym_tab->get_next_label();
+    int end = sym_tab->get_next_label(); // maybe check if elsif exists or not
     sym_index pos = condition->generate_quads(q);
     q += new quadruple(q_jmpf, skip, pos, NULL_SYM);
     if(body != NULL)
@@ -492,8 +494,9 @@ sym_index ast_if::generate_quads(quad_list &q)
     q += new quadruple(q_labl, skip, NULL_SYM, NULL_SYM);
     if(elsif_list != NULL)
         elsif_list->generate_quads_and_jump(q, end);
-    if(body != NULL)
-        body->generate_quads(q);
+    if(else_body != NULL)
+        else_body->generate_quads(q);
+    q += new quadruple(q_labl, end, NULL_SYM, NULL_SYM);
     return NULL_SYM;
 }
 
