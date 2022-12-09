@@ -384,7 +384,6 @@ void ast_expr_list::generate_parameter_list(quad_list &q,
 {
     USE_Q;
     /* code continued */
-
     sym_index pos = last_expr->generate_quads(q);
     q += new quadruple(q_param, pos, NULL_SYM, NULL_SYM);
     (*nr_params)++;
@@ -485,7 +484,7 @@ sym_index ast_if::generate_quads(quad_list &q)
     USE_Q;
     /* code completed */
     int skip = sym_tab->get_next_label();
-    int end = sym_tab->get_next_label(); // maybe check if elsif exists or not
+    int end = sym_tab->get_next_label();
     sym_index pos = condition->generate_quads(q);
     q += new quadruple(q_jmpf, skip, pos, NULL_SYM);
     if(body != NULL)
