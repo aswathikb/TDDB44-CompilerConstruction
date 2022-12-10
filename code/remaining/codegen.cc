@@ -142,7 +142,7 @@ void code_generator::epilogue(symbol *old_env)
    array or a parameter. Note the pass-by-pointer arguments. */
 void code_generator::find(sym_index sym_p, int *level, int *offset)
 {
-    /* Your code here */
+    /* code completed */
     symbol *symb = sym_tab->get_symbol(sym_p);
     *level = symb->level;
     if(symb->tag == SYM_VAR || symb->tag == SYM_ARRAY){
@@ -183,11 +183,7 @@ void code_generator::fetch(sym_index sym_p, register_type dest)
         constant_symbol* cs = symb->get_constant_symbol();
 
         out << "\t\t" << "mov" << "\t" << reg[dest];
-        if(cs->type == real_type)
-            out << cs->const_value.rval; // not sure if this case is ever used
-        else
-            out << cs->const_value.ival;
-        cout << endl;
+        out << cs->const_value.ival << endl;
     } else if(symb->tag == SYM_VAR || symb->tag == SYM_PARAM) {
         // we calculate the level and offset first with find
         find(sym_p, &level, &offset);
@@ -207,7 +203,28 @@ void code_generator::fetch(sym_index sym_p, register_type dest)
 
 void code_generator::fetch_float(sym_index sym_p)
 {
-    /* Your code here */
+    /* Your code here - continue here */
+    block_level level;      // Current scope level.
+    int offset;             // Offset within current activation record.
+    symbol *symb = sym_tab->get_symbol(sym_p);
+
+    /*  */
+    if(symb->tag == SYM_CONST){
+        constant_symbol* cs = symb->get_constant_symbol();
+
+        out << "\t\t" << "fld" << "\t" << cs->const_value.rval << endl;
+    } else if(symb->tag == SYM_VAR || symb->tag == SYM_PARAM) {
+        find(sym_p, &level, &offset);
+        frame_address(level, RCX);
+
+        out << "\t\t" << "fld" << "\t[" << reg[RCX];
+        if (offset >= 0) {
+            out << "+" << offset;
+        } else {
+            out << offset; // Implicit "-"
+        }
+        out << "]" << endl;
+    }
 }
 
 
@@ -215,7 +232,22 @@ void code_generator::fetch_float(sym_index sym_p)
 /* This function stores the value of a register into a variable. */
 void code_generator::store(register_type src, sym_index sym_p)
 {
-    /* Your code here */
+    /* code completed */
+    block_level level;      // Current scope level.
+    int offset;             // Offset within current activation record.
+    
+    // again find the address of variable and store it in the src-register
+    find(sym_p, &level, &offset);
+    frame_address(level, src);
+
+    // "mov adress, src" moves the value of the src-register into variable at "adress"
+    out << "\t\t" << "mov" << "\t" << "[" << reg[src];
+    if (offset >= 0) {
+        out << "+" << offset;
+    } else {
+        out << offset; // Implicit "-"
+    }
+    out << "], " << reg[src] << endl;
 }
 
 void code_generator::store_float(sym_index sym_p)
@@ -227,7 +259,21 @@ void code_generator::store_float(sym_index sym_p)
 /* This function fetches the base address of an array. */
 void code_generator::array_address(sym_index sym_p, register_type dest)
 {
-    /* Your code here */
+    /* code completed */
+    block_level level;      // Current scope level.
+    int offset;             // Offset within current activation record.
+    
+    // again find the address of variable and store it in the src-register
+    find(sym_p, &level, &offset);
+    frame_address(level, dest);
+
+    // add/sub the offset to the frame address (which is currently in dest) 
+    if (offset >= 0) {
+        out << "\t\t" << "add" << "\t" << reg[dest] << offset;
+    } else {
+        out << "\t\t" << "sub" << "\t" << reg[dest] << (-offset);
+    }
+    out << endl;
 }
 
 /* This method expands a quad_list into assembler code, quad for quad. */
@@ -578,11 +624,31 @@ void code_generator::expand(quad_list *q_list)
             break;
 
         case q_param:
-            /* Your code here */
+            /* code completed */
+            // this quad just fetches a value and pushes the result onto the stack
+            fetch(q->sym1, RAX);
+            out << "\t\t" << "push" << "\t" << reg[RAX] << endl;
             break;
 
         case q_call: {
-            /* Your code here */
+            /* code completed */
+            symbol *symb = sym_tab->get_symbol(q->sym1);
+            /* function and procedure differ since procdure doesnt return anything (no store) 
+               but besides that both have the same structure... */
+            if(symb->tag == SYM_FUNC){
+                function_symbol *func_symb = symb->get_function_symbol(); // simple cast
+                // is dont by call out << "\t\t" << "push" << "\t" << "rsp" << endl; // push the return address
+                out << "\t\t" << "call" << "\t" << "L" << func_symb->label_nr;
+                out << "\t# " << sym_tab->pool_lookup(func_symb->id) << endl; // call the correct label
+                out << "\t\t" << "add" << "\t" << "rsp, " << (STACK_WIDTH*q->int2) << endl; // cleanup stack - remove calling parameter
+                store(RAX, q->sym3);
+            } else if (symb->tag == SYM_PROC) {
+                procedure_symbol *proc_symb = symb->get_procedure_symbol();
+                // out << "\t\t" << "push" << "\t" << "rsp" << endl;
+                out << "\t\t" << "call" << "\t" << "L" << proc_symb->label_nr;
+                out << "\t# " << sym_tab->pool_lookup(proc_symb->id) << endl;
+                out << "\t\t" << "add" << "\t" << "rsp, " << (STACK_WIDTH*q->int2) << endl;
+            }
             break;
         }
         case q_rreturn:
