@@ -312,7 +312,8 @@ sym_index ast_idiv::type_check()
 sym_index ast_mod::type_check()
 {
     /* code completed */
-    return type_checker->check_binop2(this, "mod wrong");
+    type = type_checker->check_binop2(this, "mod wrong");
+    return type;
 }
 
 

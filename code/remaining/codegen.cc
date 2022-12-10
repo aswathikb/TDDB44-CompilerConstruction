@@ -98,7 +98,23 @@ void code_generator::prologue(symbol *new_env)
             << long_symbols << ")" << endl;
     }
 
-    /* Your code here */
+    /* code completed */
+    // push previous rbp
+    out << "\t\t" << "push" << "\t" << "rbp" << endl;
+
+    // save rsp for updating the rdp after pushing the display
+    out << "\t\t" << "mov" << "\t" << "rcx, rsp" << endl;
+
+    // push the display (rcx has current rdp stored)
+    for(int i = 1; new_env->level >= i; i++)
+        out << "\t\t" << "push" << "\t" << "[rbp-" << (i*STACK_WIDTH) << "]" << endl;
+    out << "\t\t" << "push" << "\t" << "rcx" << endl;
+
+    // updating current rbp
+    out << "\t\t" << "mov" << "\t" << "rbp, rcx" << endl;
+
+    // allocating space for local and global variables
+    out << "\t\t" << "sub" << "\t" << "rsp, " << ar_size << endl;
 
     out << flush;
 }
@@ -113,7 +129,9 @@ void code_generator::epilogue(symbol *old_env)
             << long_symbols << ")" << endl;
     }
 
-    /* Your code here */
+    /* code completed */
+    out << "\t\t" << "leave" << endl; // copies old rdp from stack back in the register -> releasing activation record
+    out << "\t\t" << "ret" << endl; // Return to the caller (pops return address from stack)
 
     out << flush;
 }
@@ -125,6 +143,15 @@ void code_generator::epilogue(symbol *old_env)
 void code_generator::find(sym_index sym_p, int *level, int *offset)
 {
     /* Your code here */
+    symbol *symb = sym_tab->get_symbol(sym_p);
+    *level = symb->level;
+    if(symb->tag == SYM_VAR || symb->tag == SYM_ARRAY){
+        // offset calculation: previous rdp + display + offset from symtab (minus since stack grows downwards)
+        *offset = -(STACK_WIDTH + (*level)*STACK_WIDTH + symb->offset);
+    } else {
+        // offset calculation: return adress + offset + addition Stack_width in order to point to the start of an element not the end
+        *offset = STACK_WIDTH + symb->offset + STACK_WIDTH;
+    }
 }
 
 /*
@@ -132,14 +159,50 @@ void code_generator::find(sym_index sym_p, int *level, int *offset)
  */
 void code_generator::frame_address(int level, const register_type dest)
 {
-    /* Your code here */
+    /* code completed */
+    // mov display of a specified level into the destination register
+    // adress calculation: STACK_WIDTH (skip previous rdp) + (level-1) * STACK_WIDTH to get the right element from the display
+    //                      --> can be rewritten to (STACK_WIDTH*level)
+    out << "\t\t" << "mov" << "\t" << reg[dest] << ", [rdp-" << (STACK_WIDTH*level) << "]" << endl;
 }
 
 /* This function fetches the value of a variable or a constant into a
    register. */
 void code_generator::fetch(sym_index sym_p, register_type dest)
 {
-    /* Your code here */
+    /* code completed */
+    block_level level;      // Current scope level.
+    int offset;             // Offset within current activation record.
+    symbol *symb = sym_tab->get_symbol(sym_p);
+
+    /* we differ between variable (+paramater) and constants 
+       for constants we can make a simple "mov reg, value"
+       while we have to fetch the value from the stack for variables 
+                --> mov reg, [address] */
+    if(symb->tag == SYM_CONST){
+        constant_symbol* cs = symb->get_constant_symbol();
+
+        out << "\t\t" << "mov" << "\t" << reg[dest];
+        if(cs->type == real_type)
+            out << cs->const_value.rval; // not sure if this case is ever used
+        else
+            out << cs->const_value.ival;
+        cout << endl;
+    } else if(symb->tag == SYM_VAR || symb->tag == SYM_PARAM) {
+        // we calculate the level and offset first with find
+        find(sym_p, &level, &offset);
+        /* fetch the rdp of the level in the destination register 
+           (we reuse the desitnation reg to avoid side effects) */
+        frame_address(level, dest);
+
+        out << "\t\t" << "mov" << "\t" << reg[dest] << ", [" << reg[dest];
+        if (offset >= 0) {
+            out << "+" << offset;
+        } else {
+            out << offset; // Implicit "-"
+        }
+        out << "]" << endl;
+    }
 }
 
 void code_generator::fetch_float(sym_index sym_p)
