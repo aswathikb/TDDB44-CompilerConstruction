@@ -485,11 +485,15 @@ sym_index ast_if::generate_quads(quad_list &q)
     USE_Q;
     /* code completed */
     int skip = sym_tab->get_next_label();
-    int end = sym_tab->get_next_label(); // maybe check if elsif exists or not
     sym_index pos = condition->generate_quads(q);
     q += new quadruple(q_jmpf, skip, pos, NULL_SYM);
     if(body != NULL)
         body->generate_quads(q);
+    if(elsif_list == NULL && else_body == NULL){
+        q += new quadruple(q_labl, skip, NULL_SYM, NULL_SYM);
+        return NULL_SYM;
+    }
+    int end = sym_tab->get_next_label();
     q += new quadruple(q_jmp, end, NULL_SYM, NULL_SYM);
     q += new quadruple(q_labl, skip, NULL_SYM, NULL_SYM);
     if(elsif_list != NULL)

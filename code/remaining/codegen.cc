@@ -102,10 +102,10 @@ void code_generator::prologue(symbol *new_env)
     // push previous rbp
     out << "\t\t" << "push" << "\t" << "rbp" << endl;
 
-    // save rsp for updating the rdp after pushing the display
+    // save rsp for updating the rbp after pushing the display
     out << "\t\t" << "mov" << "\t" << "rcx, rsp" << endl;
 
-    // push the display (rcx has current rdp stored)
+    // push the display (rcx has current rbp stored)
     for(int i = 1; new_env->level >= i; i++)
         out << "\t\t" << "push" << "\t" << "[rbp-" << (i*STACK_WIDTH) << "]" << endl;
     out << "\t\t" << "push" << "\t" << "rcx" << endl;
@@ -130,7 +130,7 @@ void code_generator::epilogue(symbol *old_env)
     }
 
     /* code completed */
-    out << "\t\t" << "leave" << endl; // copies old rdp from stack back in the register -> releasing activation record
+    out << "\t\t" << "leave" << endl; // copies old rbp from stack back in the register -> releasing activation record
     out << "\t\t" << "ret" << endl; // Return to the caller (pops return address from stack)
 
     out << flush;
@@ -146,7 +146,7 @@ void code_generator::find(sym_index sym_p, int *level, int *offset)
     symbol *symb = sym_tab->get_symbol(sym_p);
     *level = symb->level;
     if(symb->tag == SYM_VAR || symb->tag == SYM_ARRAY){
-        // offset calculation: previous rdp + display + offset from symtab (minus since stack grows downwards)
+        // offset calculation: previous rbp + display + offset from symtab (minus since stack grows downwards)
         *offset = -(STACK_WIDTH + (*level)*STACK_WIDTH + symb->offset);
     } else {
         // offset calculation: return adress + offset + addition Stack_width in order to point to the start of an element not the end
@@ -161,9 +161,9 @@ void code_generator::frame_address(int level, const register_type dest)
 {
     /* code completed */
     // mov display of a specified level into the destination register
-    // adress calculation: STACK_WIDTH (skip previous rdp) + (level-1) * STACK_WIDTH to get the right element from the display
+    // adress calculation: STACK_WIDTH (skip previous rbp) + (level-1) * STACK_WIDTH to get the right element from the display
     //                      --> can be rewritten to (STACK_WIDTH*level)
-    out << "\t\t" << "mov" << "\t" << reg[dest] << ", [rdp-" << (STACK_WIDTH*level) << "]" << endl;
+    out << "\t\t" << "mov" << "\t" << reg[dest] << ", [rbp-" << (STACK_WIDTH*level) << "]" << endl;
 }
 
 /* This function fetches the value of a variable or a constant into a
@@ -183,15 +183,17 @@ void code_generator::fetch(sym_index sym_p, register_type dest)
         constant_symbol* cs = symb->get_constant_symbol();
 
         out << "\t\t" << "mov" << "\t" << reg[dest];
-        out << cs->const_value.ival << endl;
+        out << ", " << cs->const_value.ival << endl;
     } else if(symb->tag == SYM_VAR || symb->tag == SYM_PARAM) {
         // we calculate the level and offset first with find
         find(sym_p, &level, &offset);
-        /* fetch the rdp of the level in the destination register 
-           (we reuse the desitnation reg to avoid side effects) */
-        frame_address(level, dest);
-
-        out << "\t\t" << "mov" << "\t" << reg[dest] << ", [" << reg[dest];
+        /* fetch the rbp of the level in the destination register 
+           (I would reuse the desitnation reg to avoid side effects,
+           but then the make lab7 fails so instead using now rcx
+           maybe you cant use the same register for both operands) */
+        // frame_address(level, dest);
+        frame_address(level, RCX);
+        out << "\t\t" << "mov" << "\t" << reg[dest] << ", [" << reg[RCX];
         if (offset >= 0) {
             out << "+" << offset;
         } else {
@@ -204,6 +206,7 @@ void code_generator::fetch(sym_index sym_p, register_type dest)
 void code_generator::fetch_float(sym_index sym_p)
 {
     /* Your code here - continue here */
+    cout << "andi comment: not used " << endl;
     block_level level;      // Current scope level.
     int offset;             // Offset within current activation record.
     symbol *symb = sym_tab->get_symbol(sym_p);
@@ -238,10 +241,10 @@ void code_generator::store(register_type src, sym_index sym_p)
     
     // again find the address of variable and store it in the src-register
     find(sym_p, &level, &offset);
-    frame_address(level, src);
+    frame_address(level, RCX);
 
     // "mov adress, src" moves the value of the src-register into variable at "adress"
-    out << "\t\t" << "mov" << "\t" << "[" << reg[src];
+    out << "\t\t" << "mov" << "\t" << "[" << reg[RCX];
     if (offset >= 0) {
         out << "+" << offset;
     } else {
@@ -267,11 +270,12 @@ void code_generator::array_address(sym_index sym_p, register_type dest)
     find(sym_p, &level, &offset);
     frame_address(level, dest);
 
-    // add/sub the offset to the frame address (which is currently in dest) 
+    // add/sub the offset to the frame address (which is currently in dest)
+    // sample solution has a bad implementation for this can be done better... 
     if (offset >= 0) {
-        out << "\t\t" << "add" << "\t" << reg[dest] << offset;
+        out << "\t\t" << "add" << "\t" << reg[dest] << ", " << offset;
     } else {
-        out << "\t\t" << "sub" << "\t" << reg[dest] << (-offset);
+        out << "\t\t" << "sub" << "\t" << reg[dest] << ", " << (-offset);
     }
     out << endl;
 }
