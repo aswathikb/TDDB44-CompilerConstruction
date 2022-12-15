@@ -205,8 +205,8 @@ void code_generator::fetch(sym_index sym_p, register_type dest)
 
 void code_generator::fetch_float(sym_index sym_p)
 {
-    /* Your code here - continue here */
-    cout << "andi comment: not used " << endl;
+    /* code completed */
+    // not used in sample solution
     block_level level;      // Current scope level.
     int offset;             // Offset within current activation record.
     symbol *symb = sym_tab->get_symbol(sym_p);
@@ -214,13 +214,16 @@ void code_generator::fetch_float(sym_index sym_p)
     /*  */
     if(symb->tag == SYM_CONST){
         constant_symbol* cs = symb->get_constant_symbol();
-
+        // check this
+        out << "\t\t" << "mov\t" << reg[RCX] << ", " << cs->const_value.rval << endl;
+        out << "\t\t" << "push" << "\t" << reg[RCX] << endl;
         out << "\t\t" << "fld" << "\t" << cs->const_value.rval << endl;
+        out << "\t\t" << "pop" << "\t" << reg[RCX] << endl; // could also be an add
     } else if(symb->tag == SYM_VAR || symb->tag == SYM_PARAM) {
         find(sym_p, &level, &offset);
         frame_address(level, RCX);
 
-        out << "\t\t" << "fld" << "\t[" << reg[RCX];
+        out << "\t\t" << "fld" << "\tqword ptr [" << reg[RCX];
         if (offset >= 0) {
             out << "+" << offset;
         } else {
@@ -255,7 +258,19 @@ void code_generator::store(register_type src, sym_index sym_p)
 
 void code_generator::store_float(sym_index sym_p)
 {
-    /* Your code here */
+    /* code completed */
+    block_level level;
+    int offset;
+    find(sym_p, &level, &offset);
+    frame_address(level, RCX);
+
+    out << "\t\t" << "fstp" << "\t" << "qword [" << reg[RCX];
+    if (offset >= 0) {
+        out << "+" << offset;
+    } else {
+        out << offset; // Implicit "-"
+    }
+    out << "]" << endl;
 }
 
 
