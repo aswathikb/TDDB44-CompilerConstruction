@@ -211,18 +211,20 @@ void code_generator::fetch_float(sym_index sym_p)
     int offset;             // Offset within current activation record.
     symbol *symb = sym_tab->get_symbol(sym_p);
 
-    /*  */
     if(symb->tag == SYM_CONST){
         constant_symbol* cs = symb->get_constant_symbol();
-        // check this
-        out << "\t\t" << "mov\t" << reg[RCX] << ", " << cs->const_value.rval << endl;
+        // move the constant value into memory
+        out << "\t\t" << "mov" << "\t" << reg[RCX] << ", " << sym_tab->ieee(cs->const_value.rval) << endl;
         out << "\t\t" << "push" << "\t" << reg[RCX] << endl;
-        out << "\t\t" << "fld" << "\t" << cs->const_value.rval << endl;
+        // push on float stack 
+        out << "\t\t" << "fld" << "\t" << "qword ptr [rsp]" << endl;
+        // cleaning stack
         out << "\t\t" << "pop" << "\t" << reg[RCX] << endl; // could also be an add
     } else if(symb->tag == SYM_VAR || symb->tag == SYM_PARAM) {
         find(sym_p, &level, &offset);
         frame_address(level, RCX);
 
+        // similar too fetch but different command for float
         out << "\t\t" << "fld" << "\tqword ptr [" << reg[RCX];
         if (offset >= 0) {
             out << "+" << offset;
@@ -264,7 +266,7 @@ void code_generator::store_float(sym_index sym_p)
     find(sym_p, &level, &offset);
     frame_address(level, RCX);
 
-    out << "\t\t" << "fstp" << "\t" << "qword [" << reg[RCX];
+    out << "\t\t" << "fstp" << "\t" << "qword ptr [" << reg[RCX];
     if (offset >= 0) {
         out << "+" << offset;
     } else {
