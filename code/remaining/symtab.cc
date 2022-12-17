@@ -721,7 +721,7 @@ sym_index symbol_table::install_symbol(const pool_index pool_p,
     }
 
     new_symbol->level = current_level;
-    new_symbol->hash_link = lookup_result;
+    new_symbol->hash_link = hash_table[hash(pool_p)];
     new_symbol->back_link = hash(pool_p);
 
     sym_table[sym_pos] = new_symbol;
